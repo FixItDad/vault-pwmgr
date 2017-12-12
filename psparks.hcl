@@ -1,3 +1,3 @@
-path "secret/vpwmgr/users/psparks/*" {
+path "secret/vpwmgr/user/psparks/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
 }

@@ -1,4 +1,4 @@
-Dev server info
+* Dev server info
 Unseal Key: uOntcpFTYWghmwWMWYou6/ntr4l/yT5jN2qEBA+u4L4=
 Root Token: e8ee2e1f-515b-535c-93d9-fe43867c97cf
 
@@ -17,6 +17,8 @@ vault auth-enable userpass
 vault write auth/userpass/users/psparks password="$PW" policies="user-psparks"
 vault auth -method="userpass" username="psparks"
   token: e8ee2e1f-515b-535c-93d9-fe43867c97cf
+
+
 
 ==> Vault server configuration:
 

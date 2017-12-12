@@ -29,9 +29,6 @@ def log(*args):
 
 
 
-htmltext = ""
-scripttext = ""
-
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_HEAD(s):
         s.send_response(200)
@@ -49,10 +46,12 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.send_header('Content-type', 'text/html')
         s.send_header('Access-Control-Allow-Origin', '*')
         s.end_headers()
-        if ppath.path == '/index.html':
-            s.wfile.write(htmltext)
+        
+
+        if ppath.path == '/pwmgr.js':
+            s.wfile.write(open('pwmgr.js','r').read())
         else:
-            s.wfile.write(scripttext)
+            s.wfile.write(open('index.html','r').read())
 
         
     def do_POST(s):
@@ -69,10 +68,6 @@ class ThreadedHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer)
 
 if __name__ == '__main__':
     setDebug(True)
-    htmltextfile = open('index.html','r')
-    htmltext = htmltextfile.read()
-    scriptfile = open('pwmgr.js','r')
-    scripttext = scriptfile.read()
     httpd = ThreadedHTTPServer((HOST_NAME, PORT_NUMBER), MyHandler)
     print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
     try:

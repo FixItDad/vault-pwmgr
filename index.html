@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My first Vue app</title>
+  <title>Vault PW Mgr</title>
   <script src="https://unpkg.com/vue"></script>
   <style>
 body {
@@ -38,18 +38,45 @@ ul {
   </div>
 </script>
 
-<p>Password Manager</p>
-<button class="btn btn-primary" v-on:click="getGroups()">Get your passwords</button>
+<!-- Login template -->
+<script type="text/x-template" id="login-template">
+  <div>
+    <h2>Login</h2>
+<!--    <p v-if="$route.query.redirect">
+      You need to login first.
+    </p> -->
+    <form @submit.prevent="login">
+      <label><input v-model="userid" placeholder="userID"></label>
+      <label><input v-model="pass" placeholder="password" type="password"></label>
+      <button type="submit">login</button>
+      <p v-if="error" class="error">Bad login information</p>
+    </form>
+  </div>
+</script>
 
-<!-- the demo root element -->
-<ul id="demo" >
-  <li v-for="item in groups">
-    <group
-      class="group"
-      :model="item">
-    </group>
-  </li>
-</ul>
+<script type="text/x-template" id="pwmgr-template">
+  <div>
+    <ul>
+      <li v-for="item in groups">
+	<group
+	  class="group"
+	  :model="item">
+	</group>
+      </li>
+    </ul>
+  </div>
+</script>
+
+<script type="text/x-template" id="app-template">
+  <authentication v-if="(flow == 'auth')" v-on:auth-done="authComplete">
+  </authentication>
+  <pwmgr v-else :groups="pwgroups"> 
+  </pwmgr>
+</script>
+
+
+<p>Vault Password Manager</p>
+<application id="demo"></application>
 
 <script src="pwmgr.js"></script>
 </body>
