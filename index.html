@@ -19,6 +19,14 @@ ul {
   line-height: 1.5em;
   list-style-type: none;
 }
+#nav div {
+  display: inline-block;
+  width: 35%;
+  height: 100%;
+  vertical-align: top;
+  box-sizing: border-box;
+  padding: 0,20px;
+}
   </style>
 </head>
 <body>
@@ -56,14 +64,24 @@ ul {
 
 <script type="text/x-template" id="pwmgr-template">
   <div>
-    <ul>
-      <li v-for="item in groups">
-	<group
-	  class="group"
-	  :model="item">
-	</group>
-      </li>
-    </ul>
+    <div id="nav">
+      <ul>
+	<li v-for="item in groups">
+	  <group
+	    class="group"
+	    :model="item">
+	  </group>
+	</li>
+      </ul>
+    </div>
+    <div id="entrydetails" >
+      <form @submit.prevent="update">
+	<label><input v-model="userid" placeholder="userID"></label>
+	<label><input v-model="pass" placeholder="password" type="password"></label>
+	<button type="submit">update</button>
+	<p v-if="error" class="error">Error in data</p>
+      </form>
+    </div>
   </div>
 </script>
 
