@@ -2,7 +2,7 @@
 
 window.userToken = ""
 window.userid = ""
-//'273f8289-1a2d-f78e-48aa-d2fa80b02bfb';
+
 var BASEURL='http://127.0.0.1:8200/';
 
 
@@ -25,9 +25,6 @@ var pwdata = {
     ]
 }
 */
-var pwdata = {
-    groups: []
-}
 
 
 /* Response looks similar to:
@@ -61,18 +58,19 @@ function getGroups(userid) {
     console.log('getGroups for %s',userid);
     var response = vaultRequest("v1/secret/vpwmgr/user/"+userid+"/?list=true");
     var groupnames = response.data.keys;
+    var groups = []
     for (i=0; i< groupnames.length; i++) {
-        pwdata.groups[i]= new Object();
-        pwdata.groups[i].name = groupnames[i];
-        pwdata.groups[i].entries = [];
+        groups[i]= new Object();
+        groups[i].name = groupnames[i];
+        groups[i].entries = [];
         response = vaultRequest("v1/secret/vpwmgr/user/"+userid+"/"+ groupnames[i] +"?list=true");
         var entrynames = response.data.keys;
         for (j=0; j< entrynames.length; j++) {
-            pwdata.groups[i].entries[j] = new Object();
-            pwdata.groups[i].entries[j].name = entrynames[j];
+            groups[i].entries[j] = new Object();
+            groups[i].entries[j].name = entrynames[j];
         }
     }
-    return pwdata.groups;
+    return groups;
 }
 
 // define the authentication component
@@ -160,6 +158,5 @@ Vue.component('group', {
 // boot up the demo
 var demo = new Vue({
     el: '#demo',
-    data: pwdata,
 },
 )
