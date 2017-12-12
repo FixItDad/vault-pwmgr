@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My first Vue app</title>
+  <script src="https://unpkg.com/vue"></script>
+  <style>
+body {
+  font-family: Menlo, Consolas, monospace;
+  color: #444;
+}
+.group {
+  cursor: pointer;
+}
+.bold {
+  font-weight: bold;
+}
+ul {
+  padding-left: 1em;
+  line-height: 1.5em;
+  list-style-type: none;
+}
+  </style>
+</head>
+<body>
+<!-- group template -->
+<script type="text/x-template" id="group-template">
+  <div>
+    <div
+      class="bold"
+      @click="toggle">
+      {{model.name}}
+    </div>
+    <ul v-show="open">
+      <div v-for="entry in model.entries">
+        <entry :model="entry"/>
+      </div>
+    </ul>
+  </div>
+</script>
+
+<p>Password Manager</p>
+<button class="btn btn-primary" v-on:click="getGroups()">Get your passwords</button>
+
+<!-- the demo root element -->
+<ul id="demo" >
+  <li v-for="item in groups">
+    <group
+      class="group"
+      :model="item">
+    </group>
+  </li>
+</ul>
+
+<script src="pwmgr.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,32 @@
+Dev server info
+Unseal Key: uOntcpFTYWghmwWMWYou6/ntr4l/yT5jN2qEBA+u4L4=
+Root Token: e8ee2e1f-515b-535c-93d9-fe43867c97cf
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+
+
+vault write secret/vpwmgr/user/psparks/network/router username="admin" password="admin" notes="Don't mess it up."
+vault write secret/vpwmgr/user/psparks/web/google username="user" password="userpw" notes="Check email"
+vault write secret/vpwmgr/user/psparks/web/netflix username="watcher" password="userpw" notes="Watch only your favorites."
+
+# Enable cross origin. TODO lock this down
+vault write sys/config/cors enabled=true allowed_origins='*'
+
+vault policy-write user-psparks psparks.hcl
+vault auth-enable userpass
+vault write auth/userpass/users/psparks password="$PW" policies="user-psparks"
+vault auth -method="userpass" username="psparks"
+  token: e8ee2e1f-515b-535c-93d9-fe43867c97cf
+
+==> Vault server configuration:
+
+                     Cgo: disabled
+         Cluster Address: https://127.0.0.1:8201
+              Listener 1: tcp (addr: "127.0.0.1:8200", cluster address: "127.0.0.1:8201", tls: "disabled")
+               Log Level: info
+                   Mlock: supported: true, enabled: false
+        Redirect Address: http://127.0.0.1:8200
+                 Storage: inmem
+                 Version: Vault v0.9.0
+             Version Sha: bdac1854478538052ba5b7ec9a9ec688d35a3335
+
