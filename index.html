@@ -50,7 +50,7 @@ ul {
     </div>
     <ul v-show="open">
       <div v-for="entry in model.entries">
-        <entry :model="entry"/>
+        <li @click="displayItem(model.name + entry)">{{entry}}</li>
       </div>
     </ul>
   </div>

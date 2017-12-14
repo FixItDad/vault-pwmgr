@@ -56,7 +56,6 @@ function vaultRequest(relURL) {
 / {"request_id":"5eec889b-4bd2-e309-a7be-e4a1265e37f4","lease_id":"","renewable":false,"lease_duration":0,"data":{"keys":["network/","web/"]},"wrap_info":null,"warnings":null,"auth":null}
 */
 function getGroups(userid) {
-    var eid = 0;
     console.log('getGroups for %s',userid);
     var response = vaultRequest("v1/secret/vpwmgr/user/"+userid+"/?list=true");
     var groupnames = response.data.keys;
@@ -66,14 +65,23 @@ function getGroups(userid) {
         groups[i].name = groupnames[i];
         groups[i].entries = [];
         response = vaultRequest("v1/secret/vpwmgr/user/"+userid+"/"+ groupnames[i] +"?list=true");
-        var entrynames = response.data.keys;
-        for (j=0; j< entrynames.length; j++) {
-            groups[i].entries[j] = new Object();
-            groups[i].entries[j].name = entrynames[j];
-	    groups[i].entries[j].id = eid++;
-        }
+        if (response.data.keys.length > 0)
+	    groups[i].entries = response.data.keys;
     }
     return groups;
+}
+
+/* Takes group and entry name (e.g. group/entry)
+Results similar to: {"request_id":"5a98b00a-24b6-4fc0-eec3-dd26f0118369","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"notes":"Check email","password":"userpw","username":"user"},"wrap_info":null,"warnings":null,"auth":null}
+*/
+function getDetails(groupentry) {
+    console.log('getDetails for %s',groupentry);
+    var response = vaultRequest("v1/secret/vpwmgr/user/"+ userid +"/"+ groupentry);
+    var retdata = response.data
+    var eidparts = groupentry.split("/")
+    retdata.groupname = eidparts[0]
+    retdata.title = eidparts[1]
+    return retdata
 }
 
 // define the authentication component
@@ -121,15 +129,25 @@ Vue.component('pwmgr', {
     created: function () {
 	eventHub.$on('displayEntry', this.displayEntry)
     },
+    beforeDestroy: function () {
+	eventHub.$off('displayEntry', this.displayEntry)
+    },
     methods: {
 	update: function () {
 	    console.log("Update the entry");
-	}
+	},
 	showpass: function () {
 	    console.log("show the password");
-	}
+	},
 	displayEntry: function (entryId) {
-	    
+	    console.log("displayEntry %s", entryId)
+	    var data = getDetails(entryId)
+	    console.log("group=%s title=%s user=%s",data.groupname, data.title, data.username)
+	    this.groupname = data.groupname
+	    this.title = data.title
+	    this.userid = data.username
+	    this.pass = data.password
+	    this.notes = data.notes
 	}
     }
 })
@@ -155,17 +173,6 @@ Vue.component('application', {
 
 
 
-// define the item component
-Vue.component('entry', {
-    props: ['model'],
-    template: '<li>{{model.name}} @click="displayItem(itemid)"</li>',
-    methods: {
-	displayItem: function (id) {
-	    eventHub.$emit('selectEntry', model.id);
-	}
-    }
-})
-
 Vue.component('group', {
     template: '#group-template',
     props: {
@@ -179,7 +186,11 @@ Vue.component('group', {
     methods: {
         toggle: function () {
             this.open = !this.open
-        }
+        },
+	displayItem: function (entryid) {
+	    console.log('Selected entryid=%s', entryid)
+	    eventHub.$emit('displayEntry', entryid);
+	},
     }
 })
 
