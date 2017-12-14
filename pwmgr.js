@@ -5,6 +5,7 @@ window.userid = ""
 
 var BASEURL='http://127.0.0.1:8200/';
 
+var eventHub = new Vue();
 
 /* Example demo data 
 var pwdata = {
@@ -55,6 +56,7 @@ function vaultRequest(relURL) {
 / {"request_id":"5eec889b-4bd2-e309-a7be-e4a1265e37f4","lease_id":"","renewable":false,"lease_duration":0,"data":{"keys":["network/","web/"]},"wrap_info":null,"warnings":null,"auth":null}
 */
 function getGroups(userid) {
+    var eid = 0;
     console.log('getGroups for %s',userid);
     var response = vaultRequest("v1/secret/vpwmgr/user/"+userid+"/?list=true");
     var groupnames = response.data.keys;
@@ -68,6 +70,7 @@ function getGroups(userid) {
         for (j=0; j< entrynames.length; j++) {
             groups[i].entries[j] = new Object();
             groups[i].entries[j].name = entrynames[j];
+	    groups[i].entries[j].id = eid++;
         }
     }
     return groups;
@@ -77,8 +80,8 @@ function getGroups(userid) {
 Vue.component('authentication', {
     data: function () {
 	return {
-	    userid: "",
-	    pass: "",
+	    userid: "psparks",
+	    pass: "!Password01!",
 	    error: false
 	}
     },
@@ -102,12 +105,33 @@ Vue.component('authentication', {
 Vue.component('pwmgr', {
     template: "#pwmgr-template",
     props: ['groups'],
-/*    data: function () {
+    data: function () {
 	return {
-	    groups: [],
+	    groupname: "",
+	    title: "",
+	    url: "",
+	    userid: "",
+	    pass: "",
+	    notes: "",
+	    pwChanged: "1970-01-01",
+	    changed: "1970-01-01",
+	    error: "",
+	}
+    },
+    created: function () {
+	eventHub.$on('displayEntry', this.displayEntry)
+    },
+    methods: {
+	update: function () {
+	    console.log("Update the entry");
+	}
+	showpass: function () {
+	    console.log("show the password");
+	}
+	displayEntry: function (entryId) {
+	    
 	}
     }
-*/
 })
 
 // Main app component
@@ -134,7 +158,12 @@ Vue.component('application', {
 // define the item component
 Vue.component('entry', {
     props: ['model'],
-    template: "<li>{{model.name}}</li>"
+    template: '<li>{{model.name}} @click="displayItem(itemid)"</li>',
+    methods: {
+	displayItem: function (id) {
+	    eventHub.$emit('selectEntry', model.id);
+	}
+    }
 })
 
 Vue.component('group', {

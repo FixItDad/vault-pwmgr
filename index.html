@@ -19,14 +19,24 @@ ul {
   line-height: 1.5em;
   list-style-type: none;
 }
-#nav div {
-  display: inline-block;
+#nav {
+  position: fixed;
   width: 35%;
   height: 100%;
+  top: 20px;
+  left: 0;
+/*
   vertical-align: top;
+*/
   box-sizing: border-box;
-  padding: 0,20px;
+  padding: 0,120px;
 }
+
+#entrydetails {
+  margin-left: 200px;
+  padding: 0,10px;
+}
+
   </style>
 </head>
 <body>
@@ -76,10 +86,15 @@ ul {
     </div>
     <div id="entrydetails" >
       <form @submit.prevent="update">
-	<label><input v-model="userid" placeholder="userID"></label>
-	<label><input v-model="pass" placeholder="password" type="password"></label>
-	<button type="submit">update</button>
+	<p><button type="submit">update</button><button type="submit">show password</button></p>
+	<label>Group:<input v-model="groupname" placeholder="groupname"></label><br>
+	<label>Title:<input v-model="title" placeholder="title"></label><br>
+	<label>URL:<input v-model="url" placeholder="url"></label><br>
+	<label>Username:<input v-model="userid" placeholder="userID"></label><br>
+	<label>Password:<input v-model="pass" placeholder="password" type="password"></label><br>
+	<label>Notes:<input v-model="notes" placeholder="notes"></label><br>
 	<p v-if="error" class="error">Error in data</p>
+	<p>Last update:{{changed}}  Last password change:{{pwChanged}}</p>
       </form>
     </div>
   </div>
