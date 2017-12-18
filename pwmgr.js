@@ -44,7 +44,7 @@ function passwordAuthenticate(userid, password) {
 
 function vaultRequest(relURL) {
     var xhttp = new XMLHttpRequest();
-    xhttp.open("GET", BASEURL + relURL, false);
+    xhttp.open("GET", BASEURL + encodeURI(relURL), false);
     xhttp.setRequestHeader("Content-type", "application/json");
     xhttp.setRequestHeader("X-Vault-Token",window.userToken);
     xhttp.send();
@@ -62,13 +62,27 @@ function getGroups(userid) {
     var groups = []
     for (i=0; i< groupnames.length; i++) {
         groups[i]= new Object();
-        groups[i].name = groupnames[i];
+        groups[i].name = decodeURI(groupnames[i]);
         groups[i].entries = [];
         response = vaultRequest("v1/secret/vpwmgr/user/"+userid+"/"+ groupnames[i] +"?list=true");
-        if (response.data.keys.length > 0)
-	    groups[i].entries = response.data.keys;
+        for (j=0; j< response.data.keys.length; j++)
+	    groups[i].entries[j] = decodeURI(response.data.keys[j]);
     }
     return groups;
+}
+
+/* Return true is an entry with the same group/title exists */
+function entryExists (groups, groupid, title) {
+    var gid= groupid +"/";
+    for (i=0; i < groups.length; i++) {
+	console.log("|%s|%s|", groups[i].name, gid);
+	if (groups[i].name !== gid) continue;
+	for (j=0; j < groups[i].entries.length; j++) {
+	    console.log("|%s|%s|", groups[i].entries[j], title);
+	    if (groups[i].entries[j] === title) return true;
+	}
+    }
+    return false;
 }
 
 /* Takes group and entry name (e.g. group/entry)
@@ -79,10 +93,23 @@ function getDetails(groupentry) {
     var response = vaultRequest("v1/secret/vpwmgr/user/"+ userid +"/"+ groupentry);
     var retdata = response.data
     var eidparts = groupentry.split("/")
-    retdata.groupname = eidparts[0]
+    retdata.groupid = eidparts[0]
     retdata.title = eidparts[1]
     return retdata
 }
+
+/* Validate a group name. */ 
+function okGroupid(name) {
+    var re= new RegExp("^\\w+( \\w+)*$");
+    return re.test(name);
+}
+
+/* Validate a title. */ 
+function okTitle(name) {
+    var re=new RegExp("^[0-9A-Za-z$-_.+!*'(),;\/?:@=&]+$");
+    return re.test(name);
+}
+
 
 // define the authentication component
 Vue.component('authentication', {
@@ -99,7 +126,7 @@ Vue.component('authentication', {
 	    window.userid = this.userid;
 	    window.userToken = passwordAuthenticate(this.userid, this.pass)
 	    console.log("window.userToken=%s", window.userToken);
-	    if (window.userToken == '') {
+	    if (window.userToken === '') {
 		error = true;
 	    }
 	    else {
@@ -115,15 +142,18 @@ Vue.component('pwmgr', {
     props: ['groups'],
     data: function () {
 	return {
-	    groupname: "",
+	    orig_group: "",
+	    orig_title: "",
+	    groupid: "",
 	    title: "",
 	    url: "",
 	    userid: "",
 	    pass: "",
 	    notes: "",
-	    pwChanged: "1970-01-01",
-	    changed: "1970-01-01",
+	    pwChanged: "",
+	    changed: "",
 	    error: "",
+	    showPW: false,
 	}
     },
     created: function () {
@@ -133,17 +163,63 @@ Vue.component('pwmgr', {
 	eventHub.$off('displayEntry', this.displayEntry)
     },
     methods: {
+	submit: function () {}, /* Dummy, just ignore submit request */
+
+	// Determine which "update" button to show.
+	keystate: function () {
+	    if (this.groupid==="" && this.title==="") return "new";
+	    if (!entryExists(this.groups, this.groupid, this.title)) return "new";
+	    if (!(this.orig_group==this.groupid && this.orig_title==this.title)) return "overwrite";
+	    return "update";
+	},
+
+	addnew: function () {
+	    console.log("Add entry");
+	    if (!okGroupid(this.groupid)) {
+		this.error='Bad group name';
+		return;
+	    }
+	    if (!okTitle(this.title)) {
+		this.error='Bad title';
+		return;
+	    }
+	    if (!(this.orig_group===this.groupid && this.orig_title===this.title)) {
+		if (entryExists(this.groups, this.groupid, this.title)) {
+		    console.log('Duplicate Entry');
+		    this.error= "Duplicate Entry (group/title)"
+		}
+		else {
+		    this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
+		}
+	    }
+	    //writeEntry(this.groupid + this.title, this.userid, this.pass, this.notes)
+	},
 	update: function () {
 	    console.log("Update the entry");
+	    if (!okGroupid(this.groupid)) {
+		this.error='Bad group name';
+		return;
+	    }
+	    if (!okTitle(this.title)) {
+		this.error='Bad title';
+		return;
+	    }
+	    if (!(this.orig_group===this.groupid && this.orig_title===this.title)) {
+		console.log('Duplicate Entry');
+		this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
+	    }
+	    //writeEntry(this.groupid + this.title, this.userid, this.pass, this.notes)
 	},
 	showpass: function () {
-	    console.log("show the password");
+	    this.showPW = !this.showPW;
 	},
 	displayEntry: function (entryId) {
 	    console.log("displayEntry %s", entryId)
 	    var data = getDetails(entryId)
-	    console.log("group=%s title=%s user=%s",data.groupname, data.title, data.username)
-	    this.groupname = data.groupname
+	    console.log("group=%s title=%s user=%s",data.groupid, data.title, data.username)
+	    this.orig_group = data.groupid
+	    this.orig_title = data.title
+	    this.groupid = data.groupid
 	    this.title = data.title
 	    this.userid = data.username
 	    this.pass = data.password

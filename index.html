@@ -39,6 +39,16 @@ article {
   overflow: hidden;
 }
 
+label {
+  display: inline-block;
+  width: 110px;
+  text-align: right;
+}
+
+input {
+  padding: 2px;
+}
+
 header {
   padding: 3px;
   clear: left;
@@ -72,8 +82,8 @@ header {
       You need to login first.
     </p> -->
     <form @submit.prevent="login">
-      <label><input v-model="userid" placeholder="userID"></label>
-      <label><input v-model="pass" placeholder="password" type="password"></label>
+      <label>user ID:</label><input v-model="userid" placeholder="userID">
+      <label>password:</label><input v-model="pass" placeholder="password" type="password">
       <button type="submit">login</button>
       <p v-if="error" class="error">Bad login information</p>
     </form>
@@ -93,16 +103,19 @@ header {
       </ul>
     </nav>
     <article id="entrydetails" >
-      <form @submit.prevent="update">
-	<p><button type="submit">update</button><button type="submit">show password</button></p>
-	<label>Group:<input v-model="groupname" placeholder="groupname"></label><br>
-	<label>Title:<input v-model="title" placeholder="title"></label><br>
-	<label>URL:<input v-model="url" placeholder="url"></label><br>
-	<label>Username:<input v-model="userid" placeholder="userID"></label><br>
-	<label>Password:<input v-model="pass" placeholder="password" type="password"></label><br>
-	<label>Notes:<input v-model="notes" placeholder="notes"></label><br>
-	<p v-if="error" class="error">Error in data</p>
-	<p>Last update:{{changed}}  Last password change:{{pwChanged}}</p>
+      <form @submit.prevent="submit">
+	<label>*Group:</label><input v-model="groupid" placeholder="group name"><br>
+	<label>*Title:</label><input v-model="title" placeholder="title"><br>
+	<label>URL:</label><input v-model="url" placeholder="url"><br>
+	<label>Username:</label><input v-model="userid" placeholder="userID"><br>
+	<label>Password:</label><input v-model="pass" placeholder="password" :type="showPW ? '': 'password'"><button v-on:click="showpass">Show</button><br>
+	<label>Notes:</label><input v-model="notes" placeholder="notes"><br>
+	Last update:{{changed}}<br>
+	Last password change:{{pwChanged}}<br>
+	<p class="error">{{error}}</p>
+	<button v-if="keystate() === 'update'" v-on:click="update">Update</button>
+	<button v-if="keystate() === 'overwrite'" v-on:click="update">Overwrite existing!</button>
+	<button v-if="keystate() === 'new'" v-on:click="addnew">Add New</button><br>
       </form>
     </article>
   </div>
