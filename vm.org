@@ -15,6 +15,8 @@ vault write sys/config/cors enabled=true allowed_origins='*'
 vault policy-write user-psparks psparks.hcl
 vault auth-enable userpass
 vault write auth/userpass/users/psparks password="$PW" policies="user-psparks"
+
+
 vault auth -method="userpass" username="psparks"
   token: e8ee2e1f-515b-535c-93d9-fe43867c97cf
 

@@ -19,22 +19,30 @@ ul {
   line-height: 1.5em;
   list-style-type: none;
 }
-#nav {
-  position: fixed;
-  width: 35%;
-  height: 100%;
-  top: 20px;
-  left: 0;
-/*
-  vertical-align: top;
-*/
-  box-sizing: border-box;
-  padding: 0,120px;
+
+div.container {
+  width: 100%;
+  border: 1px solid gray;
 }
 
-#entrydetails {
-  margin-left: 200px;
-  padding: 0,10px;
+nav {
+  float: left;
+  max-width: 200px;
+  margin: 0;
+  padding: 2px;
+}
+
+article {
+  margin-left: 105px;
+  border-left: 1px solid gray;
+  padding: 2px;
+  overflow: hidden;
+}
+
+header {
+  padding: 3px;
+  clear: left;
+  text-align: left;
 }
 
   </style>
@@ -73,8 +81,8 @@ ul {
 </script>
 
 <script type="text/x-template" id="pwmgr-template">
-  <div>
-    <div id="nav">
+  <div class="container" >
+    <nav>
       <ul>
 	<li v-for="item in groups">
 	  <group
@@ -83,8 +91,8 @@ ul {
 	  </group>
 	</li>
       </ul>
-    </div>
-    <div id="entrydetails" >
+    </nav>
+    <article id="entrydetails" >
       <form @submit.prevent="update">
 	<p><button type="submit">update</button><button type="submit">show password</button></p>
 	<label>Group:<input v-model="groupname" placeholder="groupname"></label><br>
@@ -96,7 +104,7 @@ ul {
 	<p v-if="error" class="error">Error in data</p>
 	<p>Last update:{{changed}}  Last password change:{{pwChanged}}</p>
       </form>
-    </div>
+    </article>
   </div>
 </script>
 
@@ -107,8 +115,9 @@ ul {
   </pwmgr>
 </script>
 
-
-<p>Vault Password Manager</p>
+<header>
+  <p>Vault Password Manager</p>
+</header>
 <application id="demo"></application>
 
 <script src="pwmgr.js"></script>
