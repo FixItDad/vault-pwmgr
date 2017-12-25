@@ -6,10 +6,10 @@ export VAULT_ADDR='http://127.0.0.1:8200'
 
 
 
-vault write secret/vpwmgr/user/psparks/network/router username="admin" password="admin" notes="Don't mess it up."
-vault write secret/vpwmgr/user/psparks/web/google username="user" password="userpw" notes="Check email"
-vault write secret/vpwmgr/user/psparks/web/netflix username="watcher" password="userpw" notes="Watch only your favorites."
-vault write secret/vpwmgr/user/psparks/Paul%27s%20Stuff%21/%24%2bdream username="admin" password="admin" notes="Don't mess it up."
+vault write secret/vpwmgr/user/psparks/network/router userid="admin" password="admin" notes="Don't mess it up."
+vault write secret/vpwmgr/user/psparks/web/google userid="user" password="userpw" notes="Check email"
+vault write secret/vpwmgr/user/psparks/web/netflix userid="watcher" password="userpw" notes="Watch only your favorites."
+vault write secret/vpwmgr/user/psparks/Paul%27s%20Stuff%21/%24%2bdream userid="admin" password="admin" notes="Don't mess it up."
 
 
 

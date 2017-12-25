@@ -41,18 +41,31 @@ article {
 
 label {
   display: inline-block;
-  width: 110px;
+  width: 70px;
   text-align: right;
+  vertical-align: top;
 }
 
 input {
   padding: 2px;
+  height: 14px;
+  line-height: 14px;
+  fint-size: 14px;
 }
 
 header {
   padding: 3px;
   clear: left;
   text-align: left;
+}
+
+label textarea {
+  vertical-align: top;
+}
+
+textarea {
+  margin-left: -7px;
+  padding: 2px;
 }
 
   </style>
@@ -82,7 +95,7 @@ header {
       You need to login first.
     </p> -->
     <form @submit.prevent="login">
-      <label>user ID:</label><input v-model="userid" placeholder="userID">
+      <label>user ID:</label><input v-model="vaultid" placeholder="userID">
       <label>password:</label><input v-model="pass" placeholder="password" type="password">
       <button type="submit">login</button>
       <p v-if="error" class="error">Bad login information</p>
@@ -107,9 +120,10 @@ header {
 	<label>*Group:</label><input v-model="groupid" placeholder="group name"><br>
 	<label>*Title:</label><input v-model="title" placeholder="title"><br>
 	<label>URL:</label><input v-model="url" placeholder="url"><br>
-	<label>Username:</label><input v-model="userid" placeholder="userID"><br>
+	<label>Username:</label><input v-model="userid" placeholder="userIDx"><br>
 	<label>Password:</label><input v-model="pass" placeholder="password" :type="showPW ? '': 'password'"><button v-on:click="showpass">Show</button><br>
-	<label>Notes:</label><input v-model="notes" placeholder="notes"><br>
+	<label>Notes:</label>
+    <textarea cols="40" rows="5" v-model="notes" placeholder="notes"></textarea><br>
 	Last update:{{changed}}<br>
 	Last password change:{{pwChanged}}<br>
 	<p class="error">{{error}}</p>
