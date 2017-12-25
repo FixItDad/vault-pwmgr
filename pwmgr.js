@@ -101,12 +101,15 @@ function vaultPostRequest(relURL, dataobj) {
     return
 }
 
-function writeEntry(grouptitle, url, userid, passwd, notes) {
+function writeEntry(grouptitle, url, userid, passwd, notes, pwChanged) {
     var data = new Object()
     data.url = url
     data.userid = userid
     data.password = passwd
     data.notes = notes
+    var d = new Date();
+    data.changed = d.toISOString()
+    if (pwChanged) data.pwChanged = d.toISOString()
     vaultPostRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ grouptitle, data)
 }
 
@@ -171,6 +174,7 @@ Vue.component('pwmgr', {
 	    return {
 	        orig_group: "",
 	        orig_title: "",
+            orig_pw: "",
 	        groupid: "",
 	        title: "",
 	        url: "",
@@ -219,7 +223,8 @@ Vue.component('pwmgr', {
 		        this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
 		    }
 	    }
-	    writeEntry(this.groupid +'/'+ this.title, this.url, this.userid, this.pass, this.notes)
+	    writeEntry(this.groupid +'/'+ this.title, this.url, this.userid, this.pass, this.notes,
+                   true)
 	},
 	update: function () {
 	    console.log("Update the entry");
@@ -235,7 +240,8 @@ Vue.component('pwmgr', {
 		    console.log('Duplicate Entry');
 		    this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
 	    }
-	    writeEntry(this.groupid +'/'+ this.title, this.url, this.userid, this.pass, this.notes)
+	    writeEntry(this.groupid +'/'+ this.title, this.url, this.userid, this.pass, this.notes,
+                  (this.orig_pw != this.password))
 	},
 	showpass: function () {
 	    this.showPW = !this.showPW;
@@ -246,12 +252,15 @@ Vue.component('pwmgr', {
 	    console.log("group=%s title=%s user=%s",data.groupid, data.title, data.userid)
 	    this.orig_group = data.groupid
 	    this.orig_title = data.title
+        this.orig_pw = data.password
 	    this.groupid = data.groupid
 	    this.title = data.title
 	    this.userid = data.userid
 	    this.pass = data.password
         this.url = data.url
 	    this.notes = data.notes
+        this.changed = data.changed
+        this.pwChanged = data.pwChanged
 	}
     }
 })
