@@ -112,7 +112,7 @@ function writeEntry(obj) {
     var data = new Object()
     data.url = obj.url
     data.userid = obj.userid
-    data.password = obj.pass
+    data.password = obj.password
     data.notes = obj.notes
     data.changed = obj.changed
     data.pwChanged = obj.pwChanged
@@ -272,6 +272,7 @@ Vue.component('pwmgr', {
 	    this.notes = data.notes
         this.changed = data.changed
         this.pwChanged = data.pwChanged
+        this.showPW = false
 	}
     }
 })

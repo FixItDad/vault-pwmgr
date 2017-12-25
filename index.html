@@ -25,6 +25,10 @@ div.container {
   border: 1px solid gray;
 }
 
+img {
+  vertical-align: middle;
+}
+
 nav {
   float: left;
   max-width: 200px;
@@ -122,7 +126,7 @@ margin-top: -15px;
 	<label>*Title:</label><input v-model="title" placeholder="title"><br>
 	<label>URL:</label><input v-model="url" placeholder="url"><br>
 	<label>Username:</label><input v-model="userid" placeholder="userIDx"><br>
-	<label>Password:</label><input v-model="password" placeholder="password" :type="showPW ? '': 'password'"><button v-on:click="showpass">Show</button><br>
+	<label>Password:</label><input v-model="password" placeholder="password" :type="showPW ? '': 'password'"><img src="eye.png" v-on:click="showpass"></img><br>
 	<label>Notes:</label><br><textarea cols="40" rows="5" v-model="notes" placeholder="notes"></textarea><br>
 	Last update: {{changed}}<br>
 	Last password change: {{pwChanged}}<br>

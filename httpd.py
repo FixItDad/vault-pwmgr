@@ -48,10 +48,10 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.end_headers()
         
 
-        if ppath.path == '/pwmgr.js':
-            s.wfile.write(open('pwmgr.js','r').read())
-        else:
+        if ppath.path == '/':
             s.wfile.write(open('index.html','r').read())
+        else:
+            s.wfile.write(open(ppath.path[1:],'r').read())
 
         
     def do_POST(s):
