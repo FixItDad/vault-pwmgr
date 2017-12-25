@@ -29,6 +29,13 @@ var BASEURL='http://127.0.0.1:8200/';
 var eventHub = new Vue();
 
 
+function currentTime() {
+    var d = new Date();
+    var ds = d.toISOString()
+    return ds.slice(0,10) +" "+ ds.slice(11,19) +"Z"
+}
+
+
 /* Authenticate a user to Vault using a password.
 A successful Vault response for a password login looks similar to:
 {"request_id":"df406871-9c46-2a4b-265a-e4991e1b3737","lease_id":"","renewable":false,"lease_duration":0,"data":null,"wrap_info":null,"warnings":null,"auth":{"client_token":"7d44048a-60b0-6788-7252-1f81a423387e","accessor":"2cc26537-4873-75e5-c18d-5bc5e0d34434","policies":["default","user-psparks"],"metadata":{"userid":"psparks"},"lease_duration":2764800,"renewable":true,"entity_id":"0cf6ec07-3c81-ff05-64f2-d5a835091e92"}}
@@ -101,15 +108,15 @@ function vaultPostRequest(relURL, dataobj) {
     return
 }
 
-function writeEntry(grouptitle, url, userid, passwd, notes, pwChanged) {
+function writeEntry(obj) {
     var data = new Object()
-    data.url = url
-    data.userid = userid
-    data.password = passwd
-    data.notes = notes
-    var d = new Date();
-    data.changed = d.toISOString()
-    if (pwChanged) data.pwChanged = d.toISOString()
+    data.url = obj.url
+    data.userid = obj.userid
+    data.password = obj.pass
+    data.notes = obj.notes
+    data.changed = obj.changed
+    data.pwChanged = obj.pwChanged
+    var grouptitle = obj.groupid +'/'+ obj.title
     vaultPostRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ grouptitle, data)
 }
 
@@ -118,10 +125,8 @@ function writeEntry(grouptitle, url, userid, passwd, notes, pwChanged) {
 function entryExists (groups, groupid, title) {
     var gid= groupid +"/";
     for (i=0; i < groups.length; i++) {
-	    console.log("|%s|%s|", groups[i].name, gid);
 	    if (groups[i].name !== gid) continue;
 	    for (j=0; j < groups[i].entries.length; j++) {
-	        console.log("|%s|%s|", groups[i].entries[j], title);
 	        if (groups[i].entries[j] === title) return true;
 	    }
     }
@@ -179,7 +184,7 @@ Vue.component('pwmgr', {
 	        title: "",
 	        url: "",
 	        userid: "",
-	        pass: "",
+	        password: "",
 	        notes: "",
 	        pwChanged: "",
 	        changed: "",
@@ -223,8 +228,11 @@ Vue.component('pwmgr', {
 		        this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
 		    }
 	    }
-	    writeEntry(this.groupid +'/'+ this.title, this.url, this.userid, this.pass, this.notes,
-                   true)
+        var d = currentTime()
+        this.changed = d
+        console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
+        if (this.orig_pw !== this.password) this.pwChanged = d
+	    writeEntry(this)
 	},
 	update: function () {
 	    console.log("Update the entry");
@@ -240,8 +248,11 @@ Vue.component('pwmgr', {
 		    console.log('Duplicate Entry');
 		    this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
 	    }
-	    writeEntry(this.groupid +'/'+ this.title, this.url, this.userid, this.pass, this.notes,
-                  (this.orig_pw != this.password))
+        var d = currentTime()
+        this.changed = d
+        console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
+        if (this.orig_pw !== this.password) this.pwChanged = d
+	    writeEntry(this)
 	},
 	showpass: function () {
 	    this.showPW = !this.showPW;
@@ -256,7 +267,7 @@ Vue.component('pwmgr', {
 	    this.groupid = data.groupid
 	    this.title = data.title
 	    this.userid = data.userid
-	    this.pass = data.password
+	    this.password = data.password
         this.url = data.url
 	    this.notes = data.notes
         this.changed = data.changed

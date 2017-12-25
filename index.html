@@ -122,10 +122,10 @@ margin-top: -15px;
 	<label>*Title:</label><input v-model="title" placeholder="title"><br>
 	<label>URL:</label><input v-model="url" placeholder="url"><br>
 	<label>Username:</label><input v-model="userid" placeholder="userIDx"><br>
-	<label>Password:</label><input v-model="pass" placeholder="password" :type="showPW ? '': 'password'"><button v-on:click="showpass">Show</button><br>
+	<label>Password:</label><input v-model="password" placeholder="password" :type="showPW ? '': 'password'"><button v-on:click="showpass">Show</button><br>
 	<label>Notes:</label><br><textarea cols="40" rows="5" v-model="notes" placeholder="notes"></textarea><br>
-	Last update:{{changed}}<br>
-	Last password change:{{pwChanged}}<br>
+	Last update: {{changed}}<br>
+	Last password change: {{pwChanged}}<br>
 	<p class="error">{{error}}</p>
 	<button v-if="keystate() === 'update'" v-on:click="update">Update</button>
 	<button v-if="keystate() === 'overwrite'" v-on:click="update">Overwrite existing!</button>
