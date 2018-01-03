@@ -232,6 +232,7 @@ Vue.component('pwmgr', {
         this.changed = d
         console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
         if (this.orig_pw !== this.password) this.pwChanged = d
+        if (this.orig_group !== this.groupid) this.groups = getGroups(window.vaultid)
 	    writeEntry(this)
 	},
 	update: function () {
@@ -252,6 +253,7 @@ Vue.component('pwmgr', {
         this.changed = d
         console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
         if (this.orig_pw !== this.password) this.pwChanged = d
+        if (this.orig_group !== this.groupid) this.groups = getGroups(window.vaultid)
 	    writeEntry(this)
 	},
 	showpass: function () {
