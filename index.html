@@ -31,7 +31,7 @@ img {
 
 nav {
   float: left;
-  max-width: 200px;
+  max-width: 40%;
   margin: 0;
   padding: 2px;
 }
@@ -45,7 +45,7 @@ article {
 
 label {
   display: inline-block;
-  width: 70px;
+  width: 6rem;
   text-align: right;
   vertical-align: middle;
 }
@@ -56,7 +56,7 @@ label textarea {
 
 input {
   padding: 2px;
-  height: 14px;
+  height: 16px;
   line-height: 14px;
   font-size: 14px;
 }
@@ -68,7 +68,7 @@ header {
 }
 
 textarea {
-margin-left: 70px;
+margin-left: 6rem;
 margin-top: -15px;
   padding: 2px;
 }
@@ -131,9 +131,12 @@ margin-top: -15px;
 	Last update: {{changed}}<br>
 	Last password change: {{pwChanged}}<br>
 	<p class="error">{{error}}</p>
+	<button v-on:click="clearfields">Clear fields</button>
 	<button v-if="keystate() === 'update'" v-on:click="update">Update</button>
 	<button v-if="keystate() === 'overwrite'" v-on:click="update">Overwrite existing!</button>
 	<button v-if="keystate() === 'new'" v-on:click="addnew">Add New</button><br>
+<!--	<button v-if="isDeleteable()" v-on:click="delete">Delete</button><br>
+-->
       </form>
     </article>
   </div>

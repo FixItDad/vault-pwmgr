@@ -1,3 +1,10 @@
+* TODOs
+** DONE Refresh nav after adding / removing group
+** DONE clear form button
+** Delete entry functionality
+** test change group name
+** test change title
+
 * Dev server info
 Unseal Key: uOntcpFTYWghmwWMWYou6/ntr4l/yT5jN2qEBA+u4L4=
 Root Token: e8ee2e1f-515b-535c-93d9-fe43867c97cf

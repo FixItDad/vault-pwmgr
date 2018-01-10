@@ -41,7 +41,6 @@ A successful Vault response for a password login looks similar to:
 {"request_id":"df406871-9c46-2a4b-265a-e4991e1b3737","lease_id":"","renewable":false,"lease_duration":0,"data":null,"wrap_info":null,"warnings":null,"auth":{"client_token":"7d44048a-60b0-6788-7252-1f81a423387e","accessor":"2cc26537-4873-75e5-c18d-5bc5e0d34434","policies":["default","user-psparks"],"metadata":{"userid":"psparks"},"lease_duration":2764800,"renewable":true,"entity_id":"0cf6ec07-3c81-ff05-64f2-d5a835091e92"}}
 */
 function passwordAuthenticate(vaultid, password) {
-    console.log("passwordAuth |%s|%s|",vaultid,password);
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", BASEURL +"v1/auth/userpass/login/"+ vaultid, false);
     xhttp.setRequestHeader("Content-type", "application/json");
@@ -205,10 +204,43 @@ Vue.component('pwmgr', {
 	keystate: function () {
 	    if (this.groupid==="" && this.title==="") return "new";
 	    if (!entryExists(this.groups, this.groupid, this.title)) return "new";
-	    if (!(this.orig_group==this.groupid && this.orig_title==this.title)) return "overwrite";
+	    if (!(this.orig_group===this.groupid && this.orig_title===this.title)) return "overwrite";
 	    return "update";
 	},
+	// Determine if currently shown entry can be deleted (display delete button)
+	isDeleteable: function () {
+		return (this.orig_group!=="" && this.orig_title!=="" &&
+			   this.groupid!=="" && this.title!=="")
+	},
 
+	clearfields: function () {
+		console.log("Clear fields");
+		this.orig_group="";
+		this.orig_title="";
+		this.orig_pw="";
+		this.groupid="";
+		this.title="";
+		this.url="";
+		this.userid="";
+		this.password="";
+		this.notes="";
+		this.pwChanged="";
+		this.changed="";
+		this.error="";
+		this.showPW=false;
+	},
+	deleteentry: function () {
+		console.log("Delete entry:"+ this.groupid +"/"+ this.title);
+		if (entryExists(this.groups, this.groupid, this.title)) {
+		    console.log('Deleting Entry');
+			// TODO Confirm deletion here!!
+			deleteEntry(this);
+		    this.error= "Deleted entry "+ this.groupid +"/"+ this.title;
+		}
+		else {
+		    this.error= "Entry does not exist:"+ this.groupid +"/"+ this.title;
+		}
+	},
 	addnew: function () {
 	    console.log("Add entry");
 	    if (!okGroupid(this.groupid)) {
@@ -232,8 +264,11 @@ Vue.component('pwmgr', {
         this.changed = d
         console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
         if (this.orig_pw !== this.password) this.pwChanged = d
-        if (this.orig_group !== this.groupid) this.groups = getGroups(window.vaultid)
 	    writeEntry(this)
+		this.groups = getGroups(window.vaultid)
+		this.orig_group = this.groupid;
+		this.orig_title = this.title;
+		this.orig_pw = this.password;
 	},
 	update: function () {
 	    console.log("Update the entry");
@@ -253,8 +288,12 @@ Vue.component('pwmgr', {
         this.changed = d
         console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
         if (this.orig_pw !== this.password) this.pwChanged = d
-        if (this.orig_group !== this.groupid) this.groups = getGroups(window.vaultid)
 	    writeEntry(this)
+		// TODO Might be able to make this conditional
+        this.groups = getGroups(window.vaultid)
+		this.orig_group = this.groupid;
+		this.orig_title = this.title;
+		this.orig_pw = this.password;
 	},
 	showpass: function () {
 	    this.showPW = !this.showPW;
