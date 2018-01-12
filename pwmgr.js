@@ -249,13 +249,15 @@ Vue.component('pwmgr', {
 		return (this.orig_group!=="" && this.orig_title!=="" &&
 			   this.groupid!=="" && this.title!=="")
 	},
-
+	// The "Clear fields" button implementation
 	clearfields: function () {
 		clearAllFields(this);
 	},
+	// Do nothing when a confirmation is cancelled
 	cancel: function () {
 		this.error= "Request cancelled"
 	},
+	// Delete an entry from the PW Vault (Confirmed delete button functionality)
 	deleteentry: function () {
 		var name=this.groupid +"/"+ this.title;
 		console.log("Delete entry:"+ name);
@@ -270,6 +272,7 @@ Vue.component('pwmgr', {
 		    this.error= "Entry does not exist:"+ name;
 		}
 	},
+	// Add a new entry to PW vault
 	addnew: function () {
 	    console.log("Add entry");
 	    if (!okGroupid(this.groupid)) {
@@ -300,6 +303,7 @@ Vue.component('pwmgr', {
 		this.orig_pw = this.password;
 		this.showPW = false;
 	},
+	// Update a PW vault entry
 	update: function () {
 	    console.log("Update the entry");
 	    if (!okGroupid(this.groupid)) {
@@ -326,9 +330,11 @@ Vue.component('pwmgr', {
 		this.orig_pw = this.password;
 		this.showPW = false;
 	},
+	// Show the plaintext password toggle button (eyeball)
 	showpass: function () {
 	    this.showPW = !this.showPW;
 	},
+	// Show PW entry details when a navigation entry is selected
 	displayEntry: function (entryId) {
 	    console.log("displayEntry %s", entryId)
 	    var data = getDetails(entryId)
@@ -365,6 +371,7 @@ Vue.component('application', {
     }
 })
 
+/* General confirm dialog for destructive operations. Wrap button in <confirm ..></confirm> tags */
 Vue.component('confirm', {
 	props: ['text'],
 	functional: true,

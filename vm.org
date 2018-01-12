@@ -1,9 +1,11 @@
 * TODOs
 ** DONE Refresh nav after adding / removing group
 ** DONE clear form button
-** Delete entry functionality
+** DONE Delete entry functionality
 ** test change group name
 ** test change title
+** Implement shared groups
+
 
 * Dev server info
 Unseal Key: uOntcpFTYWghmwWMWYou6/ntr4l/yT5jN2qEBA+u4L4=
