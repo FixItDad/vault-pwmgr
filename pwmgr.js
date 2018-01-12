@@ -209,9 +209,9 @@ Vue.component('authentication', {
 // Post auth PW manger component
 Vue.component('pwmgr', {
     template: "#pwmgr-template",
-    props: ['groups'],
     data: function () {
 	    return {
+			groups: {},
 	        orig_group: "",
 	        orig_title: "",
             orig_pw: "",
@@ -229,6 +229,7 @@ Vue.component('pwmgr', {
     },
     created: function () {
 	    eventHub.$on('displayEntry', this.displayEntry)
+		this.groups = getGroups(window.vaultid)
     },
     beforeDestroy: function () {
 	    eventHub.$off('displayEntry', this.displayEntry)
@@ -354,16 +355,13 @@ Vue.component('application', {
     data: function () {
 	    return {
 	        flow: "auth",
-	        pwgroups: [],
 	    }
     },
     methods: {
-	authComplete: function() {
-	    this.pwgroups = getGroups(window.vaultid);
-	    this.flow= 'main';
-	    console.log('flow=%s', this.flow);
-	    console.log("pwgroups0=%s",this.pwgroups[0])
-	}
+		authComplete: function() {
+			this.flow= 'main';
+			console.log('flow=%s', this.flow);
+		}
     }
 })
 
