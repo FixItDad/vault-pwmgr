@@ -62,6 +62,18 @@ function vaultGetRequest(relURL) {
     return JSON.parse(xhttp.responseText);
 }
 
+/* Make a request to the Vault server. Return the parsed JSON result.
+*/
+function vaultDeleteRequest(relURL) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("DELETE", BASEURL + encodeURI(relURL), false);
+    xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.setRequestHeader("X-Vault-Token",window.userToken);
+    xhttp.send();
+    console.log("response=%s",xhttp.status);
+    return xhttp.status;
+}
+
 /* Return an array of password group names (with ending '/') for the given vaultid.
 Vault list groups response looks similar to the following (groups=network, web)
 / {"request_id":"5eec889b-4bd2-e309-a7be-e4a1265e37f4","lease_id":"","renewable":false,"lease_duration":0,"data":{"keys":["network/","web/"]},"wrap_info":null,"warnings":null,"auth":null}
@@ -119,6 +131,13 @@ function writeEntry(obj) {
     vaultPostRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ grouptitle, data)
 }
 
+function deleteEntry(groupid,title) {
+    console.log('deleteEntry for %s/%s',groupid,title);
+    var response = vaultDeleteRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ groupid
+								  +"/"+ title);
+    return response
+}
+
 
 /* Return 'true' if an entry with the same group/title exists */
 function entryExists (groups, groupid, title) {
@@ -144,13 +163,30 @@ function okTitle(name) {
     return re.test(name);
 }
 
+function clearAllFields(obj) {
+	console.log("Clear fields");
+	obj.orig_group="";
+	obj.orig_title="";
+	obj.orig_pw="";
+	obj.groupid="";
+	obj.title="";
+	obj.url="";
+	obj.userid="";
+	obj.password="";
+	obj.notes="";
+	obj.pwChanged="";
+	obj.changed="";
+	obj.error="";
+	obj.showPW=false;
+}
+
 
 // define the authentication component
 Vue.component('authentication', {
     data: function () {
 	    return {
 	        vaultid: "psparks",
-	        pass: "!Password01!",
+	        pass: "pw",
 	        error: false
 	    }
     },
@@ -214,31 +250,23 @@ Vue.component('pwmgr', {
 	},
 
 	clearfields: function () {
-		console.log("Clear fields");
-		this.orig_group="";
-		this.orig_title="";
-		this.orig_pw="";
-		this.groupid="";
-		this.title="";
-		this.url="";
-		this.userid="";
-		this.password="";
-		this.notes="";
-		this.pwChanged="";
-		this.changed="";
-		this.error="";
-		this.showPW=false;
+		clearAllFields(this);
+	},
+	cancel: function () {
+		this.error= "Request cancelled"
 	},
 	deleteentry: function () {
-		console.log("Delete entry:"+ this.groupid +"/"+ this.title);
+		var name=this.groupid +"/"+ this.title;
+		console.log("Delete entry:"+ name);
 		if (entryExists(this.groups, this.groupid, this.title)) {
 		    console.log('Deleting Entry');
-			// TODO Confirm deletion here!!
-			deleteEntry(this);
-		    this.error= "Deleted entry "+ this.groupid +"/"+ this.title;
+			deleteEntry(this.groupid, this.title);
+			this.groups = getGroups(window.vaultid)
+			clearAllFields(this)
+		    this.error= "Deleted entry "+ name;
 		}
 		else {
-		    this.error= "Entry does not exist:"+ this.groupid +"/"+ this.title;
+		    this.error= "Entry does not exist:"+ name;
 		}
 	},
 	addnew: function () {
@@ -257,7 +285,7 @@ Vue.component('pwmgr', {
 		        this.error= "Duplicate Entry (group/title)"
 		    }
 		    else {
-		        this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
+		        this.error= "Added new entry "+ this.groupid +"/"+ this.title;
 		    }
 	    }
         var d = currentTime()
@@ -269,6 +297,7 @@ Vue.component('pwmgr', {
 		this.orig_group = this.groupid;
 		this.orig_title = this.title;
 		this.orig_pw = this.password;
+		this.showPW = false;
 	},
 	update: function () {
 	    console.log("Update the entry");
@@ -294,6 +323,7 @@ Vue.component('pwmgr', {
 		this.orig_group = this.groupid;
 		this.orig_title = this.title;
 		this.orig_pw = this.password;
+		this.showPW = false;
 	},
 	showpass: function () {
 	    this.showPW = !this.showPW;
@@ -337,7 +367,37 @@ Vue.component('application', {
     }
 })
 
-
+Vue.component('confirm', {
+	props: ['text'],
+	functional: true,
+	render(h, context) {
+		// check slots
+		if (context.children.length !== 1) {
+			console.error('confirm must have exactly 1 child element.')
+			return null
+		}
+		const el = context.children[0]
+		// add listener to slot vnode if specified
+		const {confirm, cancel} = context.listeners
+		if (confirm) {
+			// create button listener callback
+			const text = context.props.text || "Really do this?"
+			const wrappedListener = () => {
+				const res = window.confirm(text)
+				if (res) {
+					confirm()
+				} else if (cancel) {
+					cancel()
+				}
+			}
+			const data = (el.data || {})
+			const on = (data.on || (data.on = {}))
+			on.click = wrappedListener
+			el.data = data
+		}
+		return el
+	}
+})
 
 Vue.component('group', {
     template: '#group-template',
