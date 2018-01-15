@@ -237,15 +237,26 @@ Vue.component('pwmgr', {
     methods: {
 	submit: function () {}, /* Dummy, just ignore submit request */
 
-	// Determine which "update" button to show.
-	keystate: function () {
-	    if (this.groupid==="" && this.title==="") return "new";
-	    if (!entryExists(this.groups, this.groupid, this.title)) return "new";
-	    if (!(this.orig_group===this.groupid && this.orig_title===this.title)) return "overwrite";
-	    return "update";
+	// Determine if "New entry" button should be displayed
+	showNew: function () {
+	    return (this.groupid!=="" && this.title!=="" &&
+				!entryExists(this.groups, this.groupid, this.title));
+	},
+
+	// Determine if Update button should be displayed.
+	showUpdate: function () {
+	    return (this.groupid!=="" && this.title!=="" &&
+				entryExists(this.groups, this.groupid, this.title) &&
+				this.orig_group===this.groupid && this.orig_title===this.title)
+	},
+	// Determine if "overwrite existing" button should be displayed.
+	showOverwrite: function () {
+	    return (this.groupid!=="" && this.title!=="" &&
+				entryExists(this.groups, this.groupid, this.title) &&
+				!(this.orig_group===this.groupid && this.orig_title===this.title))
 	},
 	// Determine if currently shown entry can be deleted (display delete button)
-	isDeleteable: function () {
+	showDelete: function () {
 		return (this.orig_group!=="" && this.orig_title!=="" &&
 			   this.groupid!=="" && this.title!=="")
 	},

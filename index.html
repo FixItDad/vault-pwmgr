@@ -131,11 +131,11 @@ margin-top: -15px;
 	Last update: {{changed}}<br>
 	Last password change: {{pwChanged}}<br>
 	<button v-on:click="clearfields">Clear fields</button>
-	<button v-if="keystate() === 'update'" v-on:click="update">Update</button>
-	<button v-if="keystate() === 'overwrite'" v-on:click="update">Overwrite existing!</button>
-	<button v-if="keystate() === 'new'" v-on:click="addnew">Add New</button>
+	<button v-if="showUpdate()" v-on:click="update">Update</button>
+	<button v-if="showOverwrite()" v-on:click="update">Overwrite existing!</button>
+	<button v-if="showNew()" v-on:click="addnew">Add New</button>
 	<confirm @confirm="deleteentry" @cancel="cancel" text="Delete entry?">
-	  <button v-if="isDeleteable()">Delete</button>
+	  <button v-if="showDelete()">Delete</button>
 	</confirm>
 	<br>
 	<p class="error">{{error}}</p>
