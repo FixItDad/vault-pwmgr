@@ -7,7 +7,10 @@ identified by a title within each group. Entries can contain an associated URL, 
 password, and free form text notes.
 
 Uses the following Vault structure to store individual user passwords.
-.../pwmgr/user/<userid>/<groupname>/<title>
+.../pwmgr/user/<vaultid>/<groupname>/<title>
+
+Uses the following Vault structure to store shared team passwords.
+.../pwmgr/user/<teamid>/<groupname>/<title>
 
 Terminology:
 vaultid = The Vault user ID
@@ -21,6 +24,9 @@ notes = textual notes associated with a password entry (optional)
 
 window.userToken = ""
 window.vaultid = ""
+
+// Special group for historical entries
+var HISTGROUP="Archived Entries"
 
 // Base URL for the Vault server
 var BASEURL='http://127.0.0.1:8200/';
@@ -138,6 +144,22 @@ function deleteEntry(groupid,title) {
     return response
 }
 
+function archiveOldEntry(obj) {
+    var data = new Object()
+    data.url = obj.o_url
+    data.userid = obj.o_userid
+    data.password = obj.o_password
+    data.notes = obj.o_notes
+    data.changed = obj.changed
+    data.pwChanged = obj.pwChanged
+	
+    var d = new Date()
+    var historyID = "/"+ HISTGROUP +"/"+ obj.o_groupid +"|"+ obj.o_title +"|"+
+		d.getFullYear() + (d.getMonth()+1) + d.getDate() +
+		d.getHours() + d.getMinutes() + d.getSeconds()
+    vaultPostRequest("v1/secret/vpwmgr/user/"+ vaultid + historyID, data)
+}
+
 
 /* Return 'true' if an entry with the same group/title exists */
 function entryExists (groups, groupid, title) {
@@ -153,6 +175,7 @@ function entryExists (groups, groupid, title) {
 
 /* Validate a group name. */ 
 function okGroupid(name) {
+	if (name === HISTGROUP) return false;
     var re= new RegExp("^\\w+( \\w+)*$");
     return re.test(name);
 }
@@ -165,9 +188,12 @@ function okTitle(name) {
 
 function clearAllFields(obj) {
 	console.log("Clear fields");
-	obj.orig_group="";
-	obj.orig_title="";
-	obj.orig_pw="";
+	obj.o_groupid="";
+	obj.o_title="";
+	obj.o_url="";
+	obj.o_userid="";
+	obj.o_password="";
+	obj.o_notes="";
 	obj.groupid="";
 	obj.title="";
 	obj.url="";
@@ -212,19 +238,23 @@ Vue.component('pwmgr', {
     data: function () {
 	    return {
 			groups: {},
-	        orig_group: "",
-	        orig_title: "",
-            orig_pw: "",
 	        groupid: "",
+	        o_groupid: "",
 	        title: "",
+	        o_title: "",
 	        url: "",
+	        o_url: "",
 	        userid: "",
+	        o_userid: "",
 	        password: "",
+            o_password: "",
 	        notes: "",
+	        o_notes: "",
 	        pwChanged: "",
 	        changed: "",
 	        error: "",
 	        showPW: false,
+			updateType: "Update",
 	    }
     },
     created: function () {
@@ -234,9 +264,15 @@ Vue.component('pwmgr', {
     beforeDestroy: function () {
 	    eventHub.$off('displayEntry', this.displayEntry)
     },
+
     methods: {
 	submit: function () {}, /* Dummy, just ignore submit request */
 
+	// Determine if currently shown entry can be deleted (display delete button)
+	showDelete: function () {
+		return (this.o_groupid!=="" && this.o_title!=="" &&
+			   this.groupid!=="" && this.title!=="")
+	},
 	// Determine if "New entry" button should be displayed
 	showNew: function () {
 	    return (this.groupid!=="" && this.title!=="" &&
@@ -245,21 +281,26 @@ Vue.component('pwmgr', {
 
 	// Determine if Update button should be displayed.
 	showUpdate: function () {
-	    return (this.groupid!=="" && this.title!=="" &&
-				entryExists(this.groups, this.groupid, this.title) &&
-				this.orig_group===this.groupid && this.orig_title===this.title)
+		this.updateType="Update"
+		if (this.groupid === HISTGROUP) return false
+		if (this.o_groupid!==this.groupid && this.o_title===this.title) {
+			this.updateType="Move"
+			return true
+		}
+		if (this.o_groupid===this.groupid && this.o_title!==this.title) {
+			this.updateType="Rename"
+			return true
+		}
+		if (this.o_groupid!==this.groupid && this.o_title!==this.title) {
+			if (entryExists(this.groups, this.groupid, this.title)) {
+				this.updateType="Overwrite existing!"
+				return true
+			}
+		}
+		return (this.o_url !== this.url || this.o_userid !== this.userid ||
+				this.o_password !== this.password || this.o_notes !== this.notes)
 	},
-	// Determine if "overwrite existing" button should be displayed.
-	showOverwrite: function () {
-	    return (this.groupid!=="" && this.title!=="" &&
-				entryExists(this.groups, this.groupid, this.title) &&
-				!(this.orig_group===this.groupid && this.orig_title===this.title))
-	},
-	// Determine if currently shown entry can be deleted (display delete button)
-	showDelete: function () {
-		return (this.orig_group!=="" && this.orig_title!=="" &&
-			   this.groupid!=="" && this.title!=="")
-	},
+
 	// The "Clear fields" button implementation
 	clearfields: function () {
 		clearAllFields(this);
@@ -274,6 +315,7 @@ Vue.component('pwmgr', {
 		console.log("Delete entry:"+ name);
 		if (entryExists(this.groups, this.groupid, this.title)) {
 		    console.log('Deleting Entry');
+			if (this.groupid !== HISTGROUP) archiveOldEntry(this)
 			deleteEntry(this.groupid, this.title);
 			this.groups = getGroups(window.vaultid)
 			clearAllFields(this)
@@ -294,7 +336,7 @@ Vue.component('pwmgr', {
 		    this.error='Bad title';
 		    return;
 	    }
-	    if (!(this.orig_group===this.groupid && this.orig_title===this.title)) {
+	    if (!(this.o_groupid===this.groupid && this.o_title===this.title)) {
 		    if (entryExists(this.groups, this.groupid, this.title)) {
 		        console.log('Duplicate Entry');
 		        this.error= "Duplicate Entry (group/title)"
@@ -305,13 +347,16 @@ Vue.component('pwmgr', {
 	    }
         var d = currentTime()
         this.changed = d
-        console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
-        if (this.orig_pw !== this.password) this.pwChanged = d
+        console.log("o_password="+ this.o_password +" curPW="+ this.password)
+        if (this.o_password !== this.password) this.pwChanged = d
 	    writeEntry(this)
 		this.groups = getGroups(window.vaultid)
-		this.orig_group = this.groupid;
-		this.orig_title = this.title;
-		this.orig_pw = this.password;
+		this.o_groupid = this.groupid;
+		this.o_title = this.title;
+		this.o_url = this.url;
+		this.o_userid = this.userid;
+		this.o_password = this.password;
+		this.o_notes = this.notes;
 		this.showPW = false;
 	},
 	// Update a PW vault entry
@@ -325,20 +370,34 @@ Vue.component('pwmgr', {
 		    this.error='Bad title';
 		    return;
 	    }
-	    if (!(this.orig_group===this.groupid && this.orig_title===this.title)) {
-		    console.log('Duplicate Entry');
-		    this.error= "Adding new entry "+ this.groupid +"/"+ this.title;
-	    }
+
+		archiveOldEntry(this)
+
+		// If either groupid or the title changed, then delete the old entry
+		if (this.o_groupid!==this.groupid || this.o_title!==this.title) {
+		    console.log('Deleting Old Entry %s/%s',this.o_groupid, this.o_title);
+			deleteEntry(this.o_groupid, this.o_title);
+		}
+
+		var ename=this.groupid +"/"+ this.title;
+		if (this.updateType ==="Move") this.error="Moved entry to "+ename;
+		else if (this.updateType ==="Rename") this.error="Renamed entry to "+ename;
+		else if (this.updateType ==="Overwrite existing!") this.error="Overwrote entry "+ename;
+		else this.error="Updated entry "+ename;
+
         var d = currentTime()
         this.changed = d
-        console.log("orig_pw="+ this.orig_pw +" curPW="+ this.password)
-        if (this.orig_pw !== this.password) this.pwChanged = d
+        console.log("o_password="+ this.o_password +" curPW="+ this.password)
+        if (this.o_password !== this.password) this.pwChanged = d
 	    writeEntry(this)
 		// TODO Might be able to make this conditional
         this.groups = getGroups(window.vaultid)
-		this.orig_group = this.groupid;
-		this.orig_title = this.title;
-		this.orig_pw = this.password;
+		this.o_groupid = this.groupid;
+		this.o_title = this.title;
+		this.o_url = this.url;
+		this.o_userid = this.userid;
+		this.o_password = this.password;
+		this.o_notes = this.notes;
 		this.showPW = false;
 	},
 	// Show the plaintext password toggle button (eyeball)
@@ -350,9 +409,12 @@ Vue.component('pwmgr', {
 	    console.log("displayEntry %s", entryId)
 	    var data = getDetails(entryId)
 	    console.log("group=%s title=%s user=%s",data.groupid, data.title, data.userid)
-	    this.orig_group = data.groupid
-	    this.orig_title = data.title
-        this.orig_pw = data.password
+	    this.o_groupid = data.groupid
+	    this.o_title = data.title
+		this.o_url = data.url;
+		this.o_userid = data.userid;
+        this.o_password = data.password
+		this.o_notes = data.notes;
 	    this.groupid = data.groupid
 	    this.title = data.title
 	    this.userid = data.userid

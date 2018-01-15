@@ -130,13 +130,12 @@ margin-top: -15px;
 	<label>Notes:</label><br><textarea cols="40" rows="5" v-model="notes" placeholder="notes"></textarea><br>
 	Last update: {{changed}}<br>
 	Last password change: {{pwChanged}}<br>
-	<button v-on:click="clearfields">Clear fields</button>
-	<button :disabled="!showUpdate()" v-on:click="update">Update</button>
-	<button :disabled="!showOverwrite()" v-on:click="update">Overwrite existing!</button>
-	<button :disabled="!showNew()" v-on:click="addnew">Add New</button>
 	<confirm @confirm="deleteentry" @cancel="cancel" text="Delete entry?">
 	  <button :disabled="!showDelete()">Delete</button>
 	</confirm>
+	<button v-on:click="clearfields">Clear fields</button>
+	<button :disabled="!showNew()" v-on:click="addnew">Add New</button>
+	<button :disabled="!showUpdate()" v-on:click="update">{{updateType}}</button>
 	<br>
 	<p class="error">{{error}}</p>
       </form>
