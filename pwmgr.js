@@ -424,7 +424,17 @@ Vue.component('pwmgr', {
         this.changed = data.changed
         this.pwChanged = data.pwChanged
         this.showPW = false
-	}
+	},
+	copyuserid: function() {
+	    console.log("copyuserid to clipboard")
+		this.$refs.userid.select()
+		document.execCommand('copy')
+	},
+	copypassword: function() {
+	    console.log("copypassword to clipboard")
+		this.$refs.password.select()
+		document.execCommand('copy')
+	},
     }
 })
 
@@ -491,10 +501,10 @@ Vue.component('group', {
         toggle: function () {
             this.open = !this.open
         },
-	displayItem: function (entryid) {
-	    console.log('Selected entryid=%s', entryid)
-	    eventHub.$emit('displayEntry', entryid);
-	},
+		displayItem: function (entryid) {
+			console.log('Selected entryid=%s', entryid)
+			eventHub.$emit('displayEntry', entryid);
+		},
     }
 })
 

@@ -2,8 +2,10 @@
 ** DONE Refresh nav after adding / removing group
 ** DONE clear form button
 ** DONE Delete entry functionality
-** test change group name
-** test change title
+** DONE test change group name
+** DONE test change title
+** DONE implement copy userid and password
+** implement timed clipboard wipeout
 ** Implement shared groups
 
 
