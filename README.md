@@ -7,7 +7,7 @@ Each user can have many password entries organized into groups. Password entries
 identified by a title within each group. Entries can contain an associated URL, userid, 
 password, and free form text notes.
 
-I'm planning to add functionality for sharing passwords among team members. Each team would have a set of passwords with grouped password entries like an individual. An individual could be a member of multiple teams as needed. An administrator role would be responsible for managing individual accounts and team membership.
+There is also functionality for sharing passwords among team members. Each team has a set of passwords with grouped password entries like an individual. An individual could be a member of multiple teams as needed. An administrator role would be responsible for managing individual accounts and team membership.
 
 Here's a screenshot representing development at the beginning of 2018. I'm sure you can tell that I'm not terribly interested in making it look pretty at this point.
 
