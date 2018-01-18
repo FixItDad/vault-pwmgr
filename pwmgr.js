@@ -10,7 +10,7 @@ Uses the following Vault structure to store individual user passwords.
 .../pwmgr/user/<vaultid>/<groupname>/<title>
 
 Uses the following Vault structure to store shared team passwords.
-.../pwmgr/user/<teamid>/<groupname>/<title>
+.../pwmgr/team/<teamid>/<groupname>/<title>
 
 Terminology:
 vaultid = The Vault user ID
@@ -27,6 +27,9 @@ window.vaultid = ""
 
 // Special group for historical entries
 var HISTGROUP="Archived Entries"
+
+// Vault path prefix for this application
+var VPWMGR= "v1/secret/vpwmgr/"
 
 // Base URL for the Vault server
 var BASEURL='http://127.0.0.1:8200/';
@@ -64,11 +67,24 @@ function vaultGetRequest(relURL) {
     xhttp.setRequestHeader("Content-type", "application/json");
     xhttp.setRequestHeader("X-Vault-Token",window.userToken);
     xhttp.send();
-    console.log("response=%s",xhttp.responseText);
+	if (xhttp.status != 200) return null
+    console.log("%s response=%s",xhttp.status, xhttp.responseText);
     return JSON.parse(xhttp.responseText);
 }
 
-/* Make a request to the Vault server. Return the parsed JSON result.
+/* Make a request to the Vault server. Return the status.
+*/
+function vaultPostRequest(relURL, dataobj) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("POST", BASEURL + encodeURI(relURL), false);
+    xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.setRequestHeader("X-Vault-Token",window.userToken);
+    xhttp.send(JSON.stringify(dataobj));
+    console.log("response=%s",xhttp.responseText);
+    return xhttp.status
+}
+
+/* Make a request to the Vault server. Return the status.
 */
 function vaultDeleteRequest(relURL) {
     var xhttp = new XMLHttpRequest();
@@ -80,21 +96,50 @@ function vaultDeleteRequest(relURL) {
     return xhttp.status;
 }
 
-/* Return an array of password group names (with ending '/') for the given vaultid.
+/* Return an array of objects consisting of names and a collection of groups.
+*/
+function getCollections(vaultid) {
+    console.log('getCollections for %s',vaultid);
+	var clist = [ "user/"+ vaultid +"/"]
+    var response = vaultGetRequest(VPWMGR +"team/?list=true");
+    var teamnames = response.data.keys.sort();
+	for (var i=0; i < teamnames.length; i++) clist[i+1] = "team/"+ teamnames[i];
+		
+	var msg="";	for (i=0; i< clist.length; i++) msg += " "+ clist[i];
+	console.log('collection list:%s',msg)
+
+	var collections = []
+	var next= 0
+    for (var i=0; i< clist.length; i++) {
+		var collection = getCollection(clist[i])
+		if (! collection) continue
+		collections[next] = {}
+		collections[next].name = clist[i]
+		collections[next].entries = collection
+		console.log("Added collection %s", collections[next].name)
+		next += 1
+    }
+    return collections;
+}
+
+/* Return an array of password group objects consisting of names (with ending '/') and an array of entry names for the given collection id. A collectionid format is either "user/<vaultid>/" or "team/<teamid>/"
+Returns null if a collection cannot be retrieved as in the case for teams which the user does not have access to.
+
 Vault list groups response looks similar to the following (groups=network, web)
 / {"request_id":"5eec889b-4bd2-e309-a7be-e4a1265e37f4","lease_id":"","renewable":false,"lease_duration":0,"data":{"keys":["network/","web/"]},"wrap_info":null,"warnings":null,"auth":null}
 */
-function getGroups(vaultid) {
-    console.log('getGroups for %s',vaultid);
-    var response = vaultGetRequest("v1/secret/vpwmgr/user/"+vaultid+"/?list=true");
+function getCollection(collectionid) {
+    console.log('getCollection for %s',collectionid);
+    var response = vaultGetRequest(VPWMGR +collectionid+"?list=true");
+	if (! response) return null
     var groupnames = response.data.keys;
     var groups = []
-    for (i=0; i< groupnames.length; i++) {
-        groups[i]= new Object();
+    for (var i=0; i< groupnames.length; i++) {
+        groups[i]= {};
         groups[i].name = decodeURI(groupnames[i]);
         groups[i].entries = [];
-        response = vaultGetRequest("v1/secret/vpwmgr/user/"+vaultid+"/"+ groupnames[i] +"?list=true");
-        for (j=0; j< response.data.keys.length; j++)
+        response = vaultGetRequest(VPWMGR +collectionid+ groupnames[i] +"?list=true");
+        for (var j=0; j< response.data.keys.length; j++)
 	    groups[i].entries[j] = decodeURI(response.data.keys[j]);
     }
     return groups;
@@ -103,26 +148,14 @@ function getGroups(vaultid) {
 /* Takes group and entry name (e.g. group/entry) Returns object with details of a password entry.
 Vault returns results similar to: {"request_id":"5a98b00a-24b6-4fc0-eec3-dd26f0118369","lease_id":"","renewable":false,"lease_duration":2764800,"data":{"notes":"Check email","password":"userpw","userid":"user"},"wrap_info":null,"warnings":null,"auth":null}
 */
-function getDetails(groupentry) {
-    console.log('getDetails for %s',groupentry);
-    var response = vaultGetRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ groupentry);
+function getDetails(entrypath) {
+    console.log('getDetails for %s',entrypath);
+    var response = vaultGetRequest(VPWMGR + entrypath);
     var retdata = response.data
-    var eidparts = groupentry.split("/")
-    retdata.groupid = eidparts[0]
-    retdata.title = eidparts[1]
+    var eidparts = entrypath.split("/")
+    retdata.groupid = eidparts[2]
+    retdata.title = eidparts[3]
     return retdata
-}
-
-/* Make a request to the Vault server. Return the parsed JSON result.
-*/
-function vaultPostRequest(relURL, dataobj) {
-    var xhttp = new XMLHttpRequest();
-    xhttp.open("POST", BASEURL + encodeURI(relURL), false);
-    xhttp.setRequestHeader("Content-type", "application/json");
-    xhttp.setRequestHeader("X-Vault-Token",window.userToken);
-    xhttp.send(JSON.stringify(dataobj));
-    console.log("response=%s",xhttp.responseText);
-    return
 }
 
 function writeEntry(obj) {
@@ -133,19 +166,17 @@ function writeEntry(obj) {
     data.notes = obj.notes
     data.changed = obj.changed
     data.pwChanged = obj.pwChanged
-    var grouptitle = obj.groupid +'/'+ obj.title
-    vaultPostRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ grouptitle, data)
+    var path = obj.collectionid + obj.groupid +'/'+ obj.title
+    vaultPostRequest(VPWMGR + path, data)
 }
 
-function deleteEntry(groupid,title) {
-    console.log('deleteEntry for %s/%s',groupid,title);
-    var response = vaultDeleteRequest("v1/secret/vpwmgr/user/"+ vaultid +"/"+ groupid
-								  +"/"+ title);
-    return response
+function deleteEntry(entrypath) {
+    console.log('deleteEntry for %s',entrypath);
+    return vaultDeleteRequest(VPWMGR + entrypath)
 }
 
 function archiveOldEntry(obj) {
-    var data = new Object()
+    var data = {}
     data.url = obj.o_url
     data.userid = obj.o_userid
     data.password = obj.o_password
@@ -154,24 +185,13 @@ function archiveOldEntry(obj) {
     data.pwChanged = obj.pwChanged
 	
     var d = new Date()
-    var historyID = "/"+ HISTGROUP +"/"+ obj.o_groupid +"|"+ obj.o_title +"|"+
+    var path = obj.collectionid + HISTGROUP +"/"+ obj.o_groupid +"|"+ obj.o_title +"|"+
 		d.getFullYear() + (d.getMonth()+1) + d.getDate() +
 		d.getHours() + d.getMinutes() + d.getSeconds()
-    vaultPostRequest("v1/secret/vpwmgr/user/"+ vaultid + historyID, data)
+	console.log("Create archive entry: %s", path)
+    vaultPostRequest(VPWMGR + path, data)
 }
 
-
-/* Return 'true' if an entry with the same group/title exists */
-function entryExists (groups, groupid, title) {
-    var gid= groupid +"/";
-    for (i=0; i < groups.length; i++) {
-	    if (groups[i].name !== gid) continue;
-	    for (j=0; j < groups[i].entries.length; j++) {
-	        if (groups[i].entries[j] === title) return true;
-	    }
-    }
-    return false;
-}
 
 /* Validate a group name. */ 
 function okGroupid(name) {
@@ -237,7 +257,8 @@ Vue.component('pwmgr', {
     template: "#pwmgr-template",
     data: function () {
 	    return {
-			groups: {},
+			collections: [],
+			groups: [],
 	        groupid: "",
 	        o_groupid: "",
 	        title: "",
@@ -259,7 +280,7 @@ Vue.component('pwmgr', {
     },
     created: function () {
 	    eventHub.$on('displayEntry', this.displayEntry)
-		this.groups = getGroups(window.vaultid)
+		this.collections = getCollections(window.vaultid)
     },
     beforeDestroy: function () {
 	    eventHub.$off('displayEntry', this.displayEntry)
@@ -267,6 +288,18 @@ Vue.component('pwmgr', {
 
     methods: {
 	submit: function () {}, /* Dummy, just ignore submit request */
+
+	/* Return 'true' if an entry with the same group/title exists in this collection*/
+	entryExists: function () {
+		var gid= this.groupid +"/";
+		for (i=0; i < this.groups.length; i++) {
+			if (this.groups[i].name !== gid) continue;
+			for (j=0; j < this.groups[i].entries.length; j++) {
+				if (this.groups[i].entries[j] === this.title) return true;
+			}
+		}
+		return false;
+	},
 
 	// Determine if currently shown entry can be deleted (display delete button)
 	showDelete: function () {
@@ -276,7 +309,7 @@ Vue.component('pwmgr', {
 	// Determine if "New entry" button should be displayed
 	showNew: function () {
 	    return (this.groupid!=="" && this.title!=="" &&
-				!entryExists(this.groups, this.groupid, this.title));
+				!this.entryExists())
 	},
 
 	// Determine if Update button should be displayed.
@@ -292,7 +325,7 @@ Vue.component('pwmgr', {
 			return true
 		}
 		if (this.o_groupid!==this.groupid && this.o_title!==this.title) {
-			if (entryExists(this.groups, this.groupid, this.title)) {
+			if (this.entryExists()) {
 				this.updateType="Overwrite existing!"
 				return true
 			}
@@ -311,18 +344,17 @@ Vue.component('pwmgr', {
 	},
 	// Delete an entry from the PW Vault (Confirmed delete button functionality)
 	deleteentry: function () {
-		var name=this.groupid +"/"+ this.title;
-		console.log("Delete entry:"+ name);
-		if (entryExists(this.groups, this.groupid, this.title)) {
-		    console.log('Deleting Entry');
+		var entrypath= this.collectionid + this.groupid +"/"+ this.title;
+		console.log("Delete entry:"+ entrypath);
+		if (this.entryExists()) {
 			if (this.groupid !== HISTGROUP) archiveOldEntry(this)
-			deleteEntry(this.groupid, this.title);
-			this.groups = getGroups(window.vaultid)
+			deleteEntry(entrypath);
+			this.groups = getCollection(this.collectionid)
 			clearAllFields(this)
-		    this.error= "Deleted entry "+ name;
+		    this.error= "Deleted entry "+ entrypath;
 		}
 		else {
-		    this.error= "Entry does not exist:"+ name;
+		    this.error= "Entry does not exist:"+ entrypath;
 		}
 	},
 	// Add a new entry to PW vault
@@ -337,7 +369,7 @@ Vue.component('pwmgr', {
 		    return;
 	    }
 	    if (!(this.o_groupid===this.groupid && this.o_title===this.title)) {
-		    if (entryExists(this.groups, this.groupid, this.title)) {
+		    if (this.entryExists()) {
 		        console.log('Duplicate Entry');
 		        this.error= "Duplicate Entry (group/title)"
 		    }
@@ -350,7 +382,7 @@ Vue.component('pwmgr', {
         console.log("o_password="+ this.o_password +" curPW="+ this.password)
         if (this.o_password !== this.password) this.pwChanged = d
 	    writeEntry(this)
-		this.groups = getGroups(window.vaultid)
+		this.groups = getCollection(collectionid)
 		this.o_groupid = this.groupid;
 		this.o_title = this.title;
 		this.o_url = this.url;
@@ -375,8 +407,9 @@ Vue.component('pwmgr', {
 
 		// If either groupid or the title changed, then delete the old entry
 		if (this.o_groupid!==this.groupid || this.o_title!==this.title) {
-		    console.log('Deleting Old Entry %s/%s',this.o_groupid, this.o_title);
-			deleteEntry(this.o_groupid, this.o_title);
+			var entrypath = this.collectionid + this.o_groupid +"/"+ this.o_title
+		    console.log('Deleting Old Entry %s',entrypath);
+			deleteEntry(entrypath);
 		}
 
 		var ename=this.groupid +"/"+ this.title;
@@ -391,7 +424,7 @@ Vue.component('pwmgr', {
         if (this.o_password !== this.password) this.pwChanged = d
 	    writeEntry(this)
 		// TODO Might be able to make this conditional
-        this.groups = getGroups(window.vaultid)
+        this.groups = getCollection(this.collectionid)
 		this.o_groupid = this.groupid;
 		this.o_title = this.title;
 		this.o_url = this.url;
@@ -405,9 +438,18 @@ Vue.component('pwmgr', {
 	    this.showPW = !this.showPW;
 	},
 	// Show PW entry details when a navigation entry is selected
-	displayEntry: function (entryId) {
-	    console.log("displayEntry %s", entryId)
-	    var data = getDetails(entryId)
+	displayEntry: function (collectionId, entryId) {
+	    console.log("displayEntry %s %s", collectionId, entryId)
+		this.collectionid = collectionId
+		// Make sure the groups field gets set for the current collection
+		this.groups = null
+		for (var i=0; i < this.collections.length; i++) {
+			if (this.collections[i].name === collectionId) {
+				this.groups = this.collections[i].entries
+				break
+			}
+		}
+	    var data = getDetails(collectionId + entryId)
 	    console.log("group=%s title=%s user=%s",data.groupid, data.title, data.userid)
 	    this.o_groupid = data.groupid
 	    this.o_title = data.title
@@ -490,8 +532,9 @@ Vue.component('confirm', {
 Vue.component('group', {
     template: '#group-template',
     props: {
+		collectionid: String,
         model: Object
-    },
+	},
     data: function () {
         return {
             open: false
@@ -503,8 +546,25 @@ Vue.component('group', {
         },
 		displayItem: function (entryid) {
 			console.log('Selected entryid=%s', entryid)
-			eventHub.$emit('displayEntry', entryid);
+			eventHub.$emit('displayEntry', this.collectionid, entryid);
 		},
+    }
+})
+
+Vue.component('collection', {
+    template: '#collection-template',
+    props: {
+        model: Object
+	},
+    data: function () {
+        return {
+            open: false
+        }
+    },
+    methods: {
+        toggle: function () {
+            this.open = !this.open
+        },
     }
 })
 

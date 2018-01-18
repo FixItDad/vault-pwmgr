@@ -22,7 +22,12 @@ vault write secret/vpwmgr/user/psparks/web/google userid="user" password="userpw
 vault write secret/vpwmgr/user/psparks/web/netflix userid="watcher" password="userpw" notes="Watch only your favorites."
 vault write secret/vpwmgr/user/psparks/Paul%27s%20Stuff%21/%24%2bdream userid="admin" password="admin" notes="Don't mess it up."
 
+vault write secret/vpwmgr/team/linuxadmin/webservers/extA userid="admin" password="admin" notes="Apache"
+vault write secret/vpwmgr/team/linuxadmin/webservers/extB userid="admin" password="admin" notes="Apache"
+vault write secret/vpwmgr/team/linuxadmin/webservers/LoadBal userid="admin" password="admin" notes="NGINX Reverse Proxy"
 
+vault write secret/vpwmgr/team/winadmin/DC/DC1 userid="admin" password="admin" notes="2012R2"
+vault write secret/vpwmgr/team/winadmin/DC/DC2 userid="admin" password="admin" notes="2012"
 
 # Enable cross origin. TODO lock this down
 vault write sys/config/cors enabled=true allowed_origins='*'

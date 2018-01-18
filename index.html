@@ -11,8 +11,18 @@ body {
 .group {
   cursor: pointer;
 }
+.collection {
+  cursor: pointer;
+}
 .bold {
   font-weight: bold;
+}
+.collectionname {
+  color: Navy;
+  font-family: serif;
+  font-weight: bold;
+  font-style: italic;
+  text-decoration: underline;
 }
 ul {
   padding-left: 1em;
@@ -76,14 +86,24 @@ margin-top: -15px;
   </style>
 </head>
 <body>
+<!-- collection template -->
+<script type="text/x-template" id="collection-template">
+  <div>
+    <div class="collectionname" @click="toggle">{{model.name.split("/")[1]}}</div>
+    <ul v-show="open">
+      <div v-for="entry in model.entries">
+        <li>
+	  <group class="group" :collectionid="model.name" :model="entry"></group>
+	</li>
+      </div>
+    </ul>
+  </div>
+</script>
+
 <!-- group template -->
 <script type="text/x-template" id="group-template">
   <div>
-    <div
-      class="bold"
-      @click="toggle">
-      {{model.name}}
-    </div>
+    <div class="bold" @click="toggle">{{model.name}}</div>
     <ul v-show="open">
       <div v-for="entry in model.entries">
         <li @click="displayItem(model.name + entry)">{{entry}}</li>
@@ -112,11 +132,11 @@ margin-top: -15px;
   <div class="container" >
     <nav>
       <ul>
-	<li v-for="item in groups">
-	  <group
-	    class="group"
+	<li v-for="item in collections">
+	  <collection
+	    class="collection"
 	    :model="item">
-	  </group>
+	  </collection>
 	</li>
       </ul>
     </nav>
