@@ -349,7 +349,7 @@ Vue.component('pwmgr', {
 		if (this.entryExists()) {
 			if (this.groupid !== HISTGROUP) archiveOldEntry(this)
 			deleteEntry(entrypath);
-			this.groups = getCollection(this.collectionid)
+			this.collections = getCollections(window.vaultid)
 			clearAllFields(this)
 		    this.error= "Deleted entry "+ entrypath;
 		}
@@ -382,7 +382,7 @@ Vue.component('pwmgr', {
         console.log("o_password="+ this.o_password +" curPW="+ this.password)
         if (this.o_password !== this.password) this.pwChanged = d
 	    writeEntry(this)
-		this.groups = getCollection(collectionid)
+		this.collections = getCollections(window.vaultid)
 		this.o_groupid = this.groupid;
 		this.o_title = this.title;
 		this.o_url = this.url;
@@ -424,7 +424,7 @@ Vue.component('pwmgr', {
         if (this.o_password !== this.password) this.pwChanged = d
 	    writeEntry(this)
 		// TODO Might be able to make this conditional
-        this.groups = getCollection(this.collectionid)
+        this.collections = getCollections(window.vaultid)
 		this.o_groupid = this.groupid;
 		this.o_title = this.title;
 		this.o_url = this.url;
