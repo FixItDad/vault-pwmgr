@@ -13,8 +13,6 @@ Here's a screenshot representing development at the beginning of 2018. I'm sure 
 
 ![Screenshot of the UI with a navigation tree of folders and entry title in the left column and a form with password entry details in the right column. There are update timestamps and an update button at the bottom or the right column.](https://github.com/FixItDad/vault-pwmgr/raw/master/images/screenshot1.jpg "Screenshot 1")
 
-**WARNING! Make sure you are seated solidly in your chair before looking at the source code.**
-(We don't need any injuries resulting from laughing fits. :-)
-This is my first AJAX project. I wanted something to help me learn [vue.js](https://vuejs.org) 
+This is my first AJAX project so try not to laugh too hard if you look at the code. I wanted something to help me learn about front-end web programming and [vue.js](https://vuejs.org) in particular. 
 
 The main action is in pwmgr.js and index.html. The httpd.py is a trivial web server that I use to make cross origin resource sharing a little easier for development. *Don't even think about using httpyd.py in a hostile environment!*
