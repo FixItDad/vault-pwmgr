@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Vault PW Mgr</title>
+  <title>Vault Password Manager</title>
   <script src="https://unpkg.com/vue"></script>
   <style>
 body {
@@ -120,10 +120,10 @@ margin-top: -15px;
       You need to login first.
     </p> -->
     <form @submit.prevent="login">
-      <label>user ID:</label><input v-model="vaultid" placeholder="userID">
-      <label>password:</label><input v-model="pass" placeholder="password" type="password">
+      <label>user ID:</label><input id="loginid" v-model="vaultid" placeholder="userID">
+      <label>password:</label><input id="loginpw" v-model="pass" placeholder="password" type="password">
       <button type="submit">login</button>
-      <p v-if="error" class="error">Bad login information</p>
+      <p id="loginmsg" class="error">{{error}}</p>
     </form>
   </div>
 </script>

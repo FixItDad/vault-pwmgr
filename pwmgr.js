@@ -55,6 +55,8 @@ function passwordAuthenticate(vaultid, password) {
     xhttp.setRequestHeader("Content-type", "application/json");
     xhttp.send('{"password":"'+ password +'"}');
     var response = JSON.parse(xhttp.responseText);
+    if (! response.auth)
+        return ""
     console.log("Response: token=%s", response.auth.client_token);
     return response.auth.client_token
 }
@@ -233,7 +235,7 @@ Vue.component('authentication', {
 	    return {
 	        vaultid: "psparks",
 	        pass: "pw",
-	        error: false
+	        error: ""
 	    }
     },
     template: "#login-template",
@@ -242,10 +244,11 @@ Vue.component('authentication', {
 	        window.vaultid = this.vaultid;
 	        window.userToken = passwordAuthenticate(this.vaultid, this.pass)
 	        console.log("window.userToken=%s", window.userToken);
-	        if (window.userToken === '') {
-		        error = true;
+	        if (window.userToken === "") {
+		        this.error = "Bad Login information";
 	        }
 	        else {
+                this.error=""
 		        this.$emit('auth-done')
 	        }
 	    }
@@ -474,8 +477,18 @@ Vue.component('pwmgr', {
 	},
 	copypassword: function() {
 	    console.log("copypassword to clipboard")
-		this.$refs.password.select()
-		document.execCommand('copy')
+        // TODO: Not sure I like changing the type to text temporarily. Could PW be displayed 
+        // for a short time or does it not even get rendered? Without the change the PW does not 
+        // get copied (FF ESR 52.6.0)
+        if (! this.showPW) {
+            this.$refs.password.type = 'text'
+		    this.$refs.password.select()
+		    document.execCommand('copy')
+            this.$refs.password.type = 'password'
+        } else {
+		    this.$refs.password.select()
+		    document.execCommand('copy')
+        }
 	},
     }
 })

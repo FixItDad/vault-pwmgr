@@ -5,36 +5,22 @@
 ** DONE test change group name
 ** DONE test change title
 ** DONE implement copy userid and password
+** automated test (Selenium. Blank page on FF startup.)
 ** implement timed clipboard wipeout
 ** Implement shared groups
 
 
 * Dev server info
+Use startdev.sh to start the servers with a test configuration
+
+# The Unseal Key and Root Token may be of interest. They can be found in logs/vault.log
+
 Unseal Key: uOntcpFTYWghmwWMWYou6/ntr4l/yT5jN2qEBA+u4L4=
 Root Token: e8ee2e1f-515b-535c-93d9-fe43867c97cf
 
 export VAULT_ADDR='http://127.0.0.1:8200'
 
 
-
-vault write secret/vpwmgr/user/psparks/network/router userid="admin" password="admin" notes="Don't mess it up."
-vault write secret/vpwmgr/user/psparks/web/google userid="user" password="userpw" notes="Check email"
-vault write secret/vpwmgr/user/psparks/web/netflix userid="watcher" password="userpw" notes="Watch only your favorites."
-vault write secret/vpwmgr/user/psparks/Paul%27s%20Stuff%21/%24%2bdream userid="admin" password="admin" notes="Don't mess it up."
-
-vault write secret/vpwmgr/team/linuxadmin/webservers/extA userid="admin" password="admin" notes="Apache"
-vault write secret/vpwmgr/team/linuxadmin/webservers/extB userid="admin" password="admin" notes="Apache"
-vault write secret/vpwmgr/team/linuxadmin/webservers/LoadBal userid="admin" password="admin" notes="NGINX Reverse Proxy"
-
-vault write secret/vpwmgr/team/winadmin/DC/DC1 userid="admin" password="admin" notes="2012R2"
-vault write secret/vpwmgr/team/winadmin/DC/DC2 userid="admin" password="admin" notes="2012"
-
-# Enable cross origin. TODO lock this down
-vault write sys/config/cors enabled=true allowed_origins='*'
-
-vault policy-write user-psparks psparks.hcl
-vault auth-enable userpass
-vault write auth/userpass/users/psparks password="$PW" policies="user-psparks"
 
 
 vault auth -method="userpass" username="psparks"
