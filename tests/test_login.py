@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Functional tests for the initial login page.
+# Functional tests for the initial password login page.
 
 # Currently targeting Firefox
 # Depends on the vault configuration provided by the startdev.sh script. 
@@ -45,6 +45,25 @@ def driver(webdriver_object):
     WebDriverWait(webdriver_object, 10).until(EC.title_contains("Vault Password Manager"))
     return webdriver_object
 
+def test_expected_fields(driver):
+    # Verify that expected fields are shown
+    loginid = driver.find_element_by_id("loginid")
+    assert loginid
+    assert loginid.tagname == "input"
+    assert loginid.is_displayed()
+    assert loginid.is_enabled()
+
+    loginpw = driver.find_element_by_id("loginpw")
+    assert loginpw
+    assert loginpw.tagname == "input"
+    assert loginpw.is_displayed()
+    assert loginpw.is_enabled()
+    assert loginpw.get_attribute("type") == "password"
+
+    loginmsg = driver.find_element_by_id("loginmsg")
+    assert loginmsg
+    assert loginmsg.is_displayed()
+    assert loginmsg.text == ""
 
 
 def test_login_bad_id(driver):

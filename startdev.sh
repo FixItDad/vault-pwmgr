@@ -26,7 +26,7 @@ vault server -dev >logs/vault.log 2>&1 &
 vault write secret/vpwmgr/user/psparks/network/router userid="admin" password="admin" notes="Don't mess it up." pwChanged="2018-02-11 14:05:51Z" changed="2018-02-11 14:05:51Z"
 vault write secret/vpwmgr/user/psparks/web/google userid="user" password="userpw" notes="Check email" pwChanged="2018-03-15 12:08:51Z" changed="2018-03-15 12:08:51Z"
 vault write secret/vpwmgr/user/psparks/web/netflix userid="watcher" password="userpw" notes="Watch only your favorites." pwChanged="2018-03-15 12:12:51Z" changed="2018-03-15 12:12:51Z"
-vault write secret/vpwmgr/user/psparks/Paul%27s%20Stuff%21/%24%2bdream userid="admin" password="admin" notes="Don't mess it up." pwChanged="2018-02-15 14:07:51Z" changed="2018-03-15 14:07:51Z"
+vault write 'secret/vpwmgr/user/psparks/Pauls Stuff/$+dream' userid="admin" password="admin" notes="Don't mess it up." pwChanged="2018-02-15 14:07:51Z" changed="2018-03-15 14:07:51Z"
 
 vault write secret/vpwmgr/team/linuxadmin/webservers/extA userid="admin" password="admin" notes="Apache" pwChanged="2018-03-15 12:07:51Z" changed="2018-03-15 12:07:51Z"
 vault write secret/vpwmgr/team/linuxadmin/webservers/extB userid="admin" password="admin" notes="Apache" pwChanged="2018-03-15 12:08:51Z" changed="2018-03-15 12:08:51Z"
