@@ -46,7 +46,7 @@ def driver(webdriver_module):
     # fresh login page and enter test user credentials.
     webdriver_module.get(PWMGR_URL)
     WebDriverWait(webdriver_module, 10).until(EC.title_contains("Vault Password Manager"))
-    _login_pw(webdriver_module,'psparks','pw')
+    _login_pw(webdriver_module,'user1','user1pw')
     WebDriverWait(webdriver_module, 10).until(EC.presence_of_element_located((By.ID,"entrydetails")))
     return webdriver_module
 
@@ -206,16 +206,16 @@ def test_navigation_visibility(driver):
     nav = NavCheck(driver)
 
     # initially only collection names are visible
-    assert nav.visible(["psparks"])
+    assert nav.visible(["user1"])
     assert nav.visible(["linuxadmin"])
     # group names
-    assert nav.hidden(["psparks","Pauls Stuff/"])
-    assert nav.hidden(["psparks","web/"])
+    assert nav.hidden(["user1","Pauls Stuff/"])
+    assert nav.hidden(["user1","web/"])
     assert nav.hidden(["linuxadmin","webservers/"])
     # Items
-    assert nav.hidden(["psparks","Pauls Stuff/","$+dream"])
-    assert nav.hidden(["psparks","web/","google"])
-    assert nav.hidden(["psparks","web/","netflix"])
+    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
+    assert nav.hidden(["user1","web/","google"])
+    assert nav.hidden(["user1","web/","netflix"])
     assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
     assert nav.hidden(["linuxadmin","webservers/","extA"])
     assert nav.hidden(["linuxadmin","webservers/","extB"])
@@ -223,37 +223,37 @@ def test_navigation_visibility(driver):
     # open a collection, groups in the collection should be visible
     nav.click(["linuxadmin"])
     assert nav.visible(["linuxadmin","webservers/"])
-    assert nav.hidden(["psparks","Pauls Stuff/"])
-    assert nav.hidden(["psparks","web/"])
+    assert nav.hidden(["user1","Pauls Stuff/"])
+    assert nav.hidden(["user1","web/"])
 
     # open other collection. All groups visible
-    nav.click(["psparks"])
+    nav.click(["user1"])
     assert nav.visible(["linuxadmin","webservers/"])
-    assert nav.visible(["psparks","Pauls Stuff/"])
-    assert nav.visible(["psparks","web/"])
+    assert nav.visible(["user1","Pauls Stuff/"])
+    assert nav.visible(["user1","web/"])
 
     # open a group. Group items are visible
-    nav.click(["psparks","web/"])
-    assert nav.visible(["psparks","web/","google"])
-    assert nav.visible(["psparks","web/","netflix"])
-    assert nav.hidden(["psparks","Pauls Stuff/","$+dream"])
+    nav.click(["user1","web/"])
+    assert nav.visible(["user1","web/","google"])
+    assert nav.visible(["user1","web/","netflix"])
+    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
     assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
     assert nav.hidden(["linuxadmin","webservers/","extA"])
     assert nav.hidden(["linuxadmin","webservers/","extB"])
 
     # Close a group and open another
-    nav.click(["psparks","web/"])
+    nav.click(["user1","web/"])
     nav.click(["linuxadmin","webservers/"])
-    assert nav.hidden(["psparks","Pauls Stuff/","$+dream"])
+    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
     assert nav.visible(["linuxadmin","webservers/","LoadBal"])
     assert nav.visible(["linuxadmin","webservers/","extA"])
     assert nav.visible(["linuxadmin","webservers/","extB"])
-    assert nav.hidden(["psparks","web/","google"])
-    assert nav.hidden(["psparks","web/","netflix"])
+    assert nav.hidden(["user1","web/","google"])
+    assert nav.hidden(["user1","web/","netflix"])
 
     #open the last group
-    nav.click(["psparks","Pauls Stuff/"])
-    assert nav.visible(["psparks","Pauls Stuff/","$+dream"])
+    nav.click(["user1","Pauls Stuff/"])
+    assert nav.visible(["user1","Pauls Stuff/","$+dream"])
 
     # close a collection, all groups and items in the collection are hidden
     nav.click(["linuxadmin"])

@@ -5,7 +5,7 @@
 ** DONE test change group name
 ** DONE test change title
 ** DONE implement copy userid and password
-** automated test (Selenium. Blank page on FF startup.)
+** automated tests
 ** implement timed clipboard wipeout
 ** Implement shared groups
 
