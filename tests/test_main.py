@@ -19,8 +19,8 @@ from selenium.webdriver.support import expected_conditions as EC
 PWMGR_URL = "http://127.0.0.1:7080/"
 
 
-# Log in with the supplied credentials
-def login(driver, userid, userpw):
+def _login_pw(driver, userid, userpw):
+    """ Helper routine to log in by password with the supplied credentials. """
     loginid = driver.find_element_by_id("loginid")
     loginid.clear()
     loginid.send_keys(userid)
@@ -33,25 +33,31 @@ def login(driver, userid, userpw):
     
 
 @pytest.fixture(scope="module")
-def webdriver_object():
-    # Create a new instance of the browser driver
+def webdriver_module():
+    # Create a new instance of the browser driver at the module level
     driver = webdriver.Firefox()
     yield driver
     driver.quit()
 
 @pytest.fixture
-def driver(webdriver_object):
-    # Browse to the login page URL to start fresh
-    webdriver_object.get(PWMGR_URL)
-    WebDriverWait(webdriver_object, 10).until(EC.title_contains("Vault Password Manager"))
-    login(webdriver_object,'psparks','pw')
-    WebDriverWait(webdriver_object, 10).until(EC.presence_of_element_located((By.ID,"entrydetails")))
-    time.sleep(0.5)
-    return webdriver_object
+def driver(webdriver_module):
+    # Set up the initial webdirver state for functions in this module.
+    # These functions test post login functionality, so start with a
+    # fresh login page and enter test user credentials.
+    webdriver_module.get(PWMGR_URL)
+    WebDriverWait(webdriver_module, 10).until(EC.title_contains("Vault Password Manager"))
+    _login_pw(webdriver_module,'user1','user1pw')
+    WebDriverWait(webdriver_module, 10).until(EC.presence_of_element_located((By.ID,"entrydetails")))
+    return webdriver_module
 
 
 class NavCheck():
+    """ 
+    Helper class for examining and manipulating the navigation tree of 
+    collections, groups and items.
+    """
     def __init__(s,driver):
+        """ Expects a Selenium style web browser driver """
         s.driver = driver
         s.nav = driver.find_element_by_tag_name("nav")
         assert s.nav
@@ -64,7 +70,9 @@ class NavCheck():
         return None
 
     def collectionname(s, name):
-        """ Return a collection webelement by name or None if not found """
+        """ Return a collection webelement by name or None if not found.
+        The collection element is the parent of the collectionname element
+        """
         for element in s.nav.find_elements_by_class_name("collectionname"):
             if element.text == name:
                 return element
@@ -87,7 +95,9 @@ class NavCheck():
         return None
 
     def groupname(s, collection, name):
-        """ Return a group webelement by name or None if not found """
+        """ Return a group webelement by name or None if not found.
+        The group element is the parent of the groupname element.
+        """
         for element in collection.find_elements_by_class_name("groupname"):
             print "Checking group name", element.text
             if element.text == name:
@@ -104,6 +114,10 @@ class NavCheck():
         return retval
 
     def item(s, group, name):
+        """ Return an item web element by name or None if not found. 
+        Unlike groupname and collectionname, itemname elements Are not contained
+        by an item element.
+        """
         for element in group.find_elements_by_class_name("itemname"):
             if element.text == name:
                 return element
@@ -164,6 +178,8 @@ class NavCheck():
         
     def hidden(s, path):
         """ Return True if an item is not visible in the nav tree """
+        # Vue does not fully build the nav tree immediately, so we must allow for
+        # elements to be missing in addition to being present but not displayed.
         assert len(path) > 0 and len(path) < 4
 
         collection = s.collectionname(path[0])
@@ -183,60 +199,61 @@ class NavCheck():
 
 
 def test_navigation_visibility(driver):
-    # Verify that expected navigation elements are visible. Expand tree to reveal all.
-
-    # Check for elements in the nav tree there are 3 level: collection, group, item
+    """ 
+    Verify that expected navigation elements are visible. Gradually expand
+    tree to reveal all 3 levels: collection, group, item
+    """
     nav = NavCheck(driver)
 
-    # initiallt only collection names are visible
-    assert nav.visible(["psparks"])
+    # initially only collection names are visible
+    assert nav.visible(["user1"])
     assert nav.visible(["linuxadmin"])
     # group names
-    assert nav.hidden(["psparks","Pauls Stuff/"])
-    assert nav.hidden(["psparks","web/"])
+    assert nav.hidden(["user1","Pauls Stuff/"])
+    assert nav.hidden(["user1","web/"])
     assert nav.hidden(["linuxadmin","webservers/"])
     # Items
-    assert nav.hidden(["psparks","Pauls Stuff/","$+dream"])
-    assert nav.hidden(["psparks","web/","google"])
-    assert nav.hidden(["psparks","web/","netflix"])
+    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
+    assert nav.hidden(["user1","web/","google"])
+    assert nav.hidden(["user1","web/","netflix"])
     assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
     assert nav.hidden(["linuxadmin","webservers/","extA"])
     assert nav.hidden(["linuxadmin","webservers/","extB"])
 
-    # open a collection, groups in the collection are visible
+    # open a collection, groups in the collection should be visible
     nav.click(["linuxadmin"])
     assert nav.visible(["linuxadmin","webservers/"])
-    assert nav.hidden(["psparks","Pauls Stuff/"])
-    assert nav.hidden(["psparks","web/"])
+    assert nav.hidden(["user1","Pauls Stuff/"])
+    assert nav.hidden(["user1","web/"])
 
     # open other collection. All groups visible
-    nav.click(["psparks"])
+    nav.click(["user1"])
     assert nav.visible(["linuxadmin","webservers/"])
-    assert nav.visible(["psparks","Pauls Stuff/"])
-    assert nav.visible(["psparks","web/"])
+    assert nav.visible(["user1","Pauls Stuff/"])
+    assert nav.visible(["user1","web/"])
 
     # open a group. Group items are visible
-    nav.click(["psparks","web/"])
-    assert nav.visible(["psparks","web/","google"])
-    assert nav.visible(["psparks","web/","netflix"])
-    assert nav.hidden(["psparks","Pauls Stuff/","$+dream"])
+    nav.click(["user1","web/"])
+    assert nav.visible(["user1","web/","google"])
+    assert nav.visible(["user1","web/","netflix"])
+    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
     assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
     assert nav.hidden(["linuxadmin","webservers/","extA"])
     assert nav.hidden(["linuxadmin","webservers/","extB"])
 
     # Close a group and open another
-    nav.click(["psparks","web/"])
+    nav.click(["user1","web/"])
     nav.click(["linuxadmin","webservers/"])
-    assert nav.hidden(["psparks","Pauls Stuff/","$+dream"])
+    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
     assert nav.visible(["linuxadmin","webservers/","LoadBal"])
     assert nav.visible(["linuxadmin","webservers/","extA"])
     assert nav.visible(["linuxadmin","webservers/","extB"])
-    assert nav.hidden(["psparks","web/","google"])
-    assert nav.hidden(["psparks","web/","netflix"])
+    assert nav.hidden(["user1","web/","google"])
+    assert nav.hidden(["user1","web/","netflix"])
 
     #open the last group
-    nav.click(["psparks","Pauls Stuff/"])
-    assert nav.visible(["psparks","Pauls Stuff/","$+dream"])
+    nav.click(["user1","Pauls Stuff/"])
+    assert nav.visible(["user1","Pauls Stuff/","$+dream"])
 
     # close a collection, all groups and items in the collection are hidden
     nav.click(["linuxadmin"])

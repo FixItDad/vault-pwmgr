@@ -78,7 +78,7 @@ def test_login_bad_id(driver):
 
 def test_login_bad_password(driver):
     # Verify error message for bad password
-    login(driver,'psparks','iMaCl0wn')
+    login(driver,'user1','iMaCl0wn')
     loginid = driver.find_element_by_id("loginid")
     assert loginid
     loginmsg = driver.find_element_by_id("loginmsg")
@@ -88,7 +88,7 @@ def test_login_bad_password(driver):
 
 def test_login_success(driver):
     # Verify page change for success
-    login(driver,'psparks','pw')
+    login(driver,'user1','user1pw')
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID,"entrydetails")))
     detail = driver.find_element_by_id("entrydetails")
     assert detail.is_displayed()
