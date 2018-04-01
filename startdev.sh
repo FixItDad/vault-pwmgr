@@ -17,11 +17,15 @@ which vault >/dev/null 2>&1 || abort "Vault executable not found. Please install
 
 [[ -x httpd.py ]] || abort "The test HTTP server appears to be missing. Are you in the top level directory?"
 
-mkdir logs
+mkdir -p logs
 
 ./httpd.py >logs/httpd.log 2>&1 &
 
 vault server -dev >logs/vault.log 2>&1 &
+# await full startup
+sleep 3
+
+export VAULT_ADDR='http://127.0.0.1:8200'
 
 vault write secret/vpwmgr/user/psparks/network/router userid="admin" password="admin" notes="Don't mess it up." pwChanged="2018-02-11 14:05:51Z" changed="2018-02-11 14:05:51Z"
 vault write secret/vpwmgr/user/psparks/web/google userid="user" password="userpw" notes="Check email" pwChanged="2018-03-15 12:08:51Z" changed="2018-03-15 12:08:51Z"
@@ -45,5 +49,3 @@ vault write auth/userpass/users/psparks password="$PW" policies="user-psparks"
 echo
 echo
 echo "Server output is in logs. Check logs/vault.log for the Vault Root token (if needed)."
-
-export VAULT_ADDR='http://127.0.0.1:8200'
