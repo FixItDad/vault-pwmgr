@@ -156,24 +156,30 @@ class NavCheck():
         return
 
     def visiblelist(s):
-        """ Returns a list of items in the nav tree that are currently visible.
-        No expansion is done. """
+        """ Returns a sorted list of tuples in the nav tree that are currently visible.
+        The tuples can be of the form ("collection",), ("collection", "group"), or
+        ("collection", "group", "item"). No expansion of the tree items is done. 
+        """
         visible = []
         collectionmap = s.collections()
         assert len(collectionmap) > 0
         for cname in collectionmap.keys():
+            collection_expanded = False
             groups = s.groups(collectionmap[cname])
-            if len(groups) == 0:
-                visible.append( (cname.text) )
-                continue
             for groupname in groups.keys():
+                group_expanded = False
                 items = s.items(groups[groupname])
-                if items is None:
-                    visible.append( (cname.text, groupname.text) )
-                    continue
                 for item in items:
-                    visible.append( (cname.text, groupname.text, item.text) )
-        return visible
+                    if item.is_displayed():
+                        visible.append( (cname.text, groupname.text, item.text) )
+                        collection_expanded = True
+                        group_expanded = True
+                if groupname.is_displayed() and not group_expanded:
+                    visible.append( (cname.text, groupname.text) )
+                    collection_expanded = True
+            if not collection_expanded:
+                visible.append( (cname.text,) )
+        return sorted(visible)
 
 
     def visible(s, path):
@@ -217,78 +223,84 @@ class NavCheck():
         if not item: return True
         return not item.is_displayed()
 
-def test_a(driver):
-        
-    nav = NavCheck(driver)
-    print nav.visiblelist()
-    assert False
 
-def test_navigation_visibility(driver):
+def ztest_navigation_visibility(driver):
     """ 
     Requirement: All authorized items should be reachable from the nav tree.
     Requirement: Nav tree initially shows only collection names.
     Gradually expand tree to reveal all 3 levels: collection, group, item
-    """
+    """        
     nav = NavCheck(driver)
 
     # initially only collection names are visible
-    assert nav.visible(["user1"])
-    assert nav.visible(["linuxadmin"])
-    # group names
-    assert nav.hidden(["user1","Pauls Stuff/"])
-    assert nav.hidden(["user1","web/"])
-    assert nav.hidden(["linuxadmin","webservers/"])
-    # Items
-    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
-    assert nav.hidden(["user1","web/","google"])
-    assert nav.hidden(["user1","web/","netflix"])
-    assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
-    assert nav.hidden(["linuxadmin","webservers/","extA"])
-    assert nav.hidden(["linuxadmin","webservers/","extB"])
+    visible = nav.visiblelist()
+    assert visible == [('linuxadmin',), ('user1',)]
 
     # open a collection, groups in the collection should be visible
     nav.click(["linuxadmin"])
-    assert nav.visible(["linuxadmin","webservers/"])
-    assert nav.hidden(["user1","Pauls Stuff/"])
-    assert nav.hidden(["user1","web/"])
+    visible = nav.visiblelist()
+    assert visible == [
+        ('linuxadmin','webservers/'),
+        ('user1',),
+    ]
 
     # open other collection. All groups visible
     nav.click(["user1"])
-    assert nav.visible(["linuxadmin","webservers/"])
-    assert nav.visible(["user1","Pauls Stuff/"])
-    assert nav.visible(["user1","web/"])
+    visible = nav.visiblelist()
+    assert visible == [
+        ('linuxadmin','webservers/'),
+        ('user1','Pauls Stuff/'),
+        ('user1','network/'),
+        ('user1','web/'),
+    ]
 
     # open a group. Group items are visible
     nav.click(["user1","web/"])
-    assert nav.visible(["user1","web/","google"])
-    assert nav.visible(["user1","web/","netflix"])
-    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
-    assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
-    assert nav.hidden(["linuxadmin","webservers/","extA"])
-    assert nav.hidden(["linuxadmin","webservers/","extB"])
+    visible = nav.visiblelist()
+    assert visible == [
+        ('linuxadmin','webservers/'),
+        ('user1','Pauls Stuff/'),
+        ('user1','network/'),
+        ('user1','web/', 'google'),
+        ('user1','web/', 'netflix'),
+    ]
 
     # Close a group and open another
     nav.click(["user1","web/"])
     nav.click(["linuxadmin","webservers/"])
-    assert nav.hidden(["user1","Pauls Stuff/","$+dream"])
-    assert nav.visible(["linuxadmin","webservers/","LoadBal"])
-    assert nav.visible(["linuxadmin","webservers/","extA"])
-    assert nav.visible(["linuxadmin","webservers/","extB"])
-    assert nav.hidden(["user1","web/","google"])
-    assert nav.hidden(["user1","web/","netflix"])
+    visible = nav.visiblelist()
+    assert visible == [
+        ('linuxadmin','webservers/','LoadBal'),
+        ('linuxadmin','webservers/','extA'),
+        ('linuxadmin','webservers/','extB'),
+        ('user1','Pauls Stuff/'),
+        ('user1','network/'),
+        ('user1','web/'),
+    ]
 
     #open the last group
     nav.click(["user1","Pauls Stuff/"])
-    assert nav.visible(["user1","Pauls Stuff/","$+dream"])
+    visible = nav.visiblelist()
+    assert visible == [
+        ('linuxadmin','webservers/','LoadBal'),
+        ('linuxadmin','webservers/','extA'),
+        ('linuxadmin','webservers/','extB'),
+        ('user1','Pauls Stuff/','$+dream'),
+        ('user1','network/'),
+        ('user1','web/'),
+    ]
 
     # close a collection, all groups and items in the collection are hidden
     nav.click(["linuxadmin"])
-    assert nav.hidden(["linuxadmin","webservers/"])
-    assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
-    assert nav.hidden(["linuxadmin","webservers/","extA"])
-    assert nav.hidden(["linuxadmin","webservers/","extB"])
-
+    visible = nav.visiblelist()
+    assert visible == [
+        ('linuxadmin',),
+        ('user1','Pauls Stuff/','$+dream'),
+        ('user1','network/'),
+        ('user1','web/'),
+    ]
     
+
 def test_(driver):
     """  """
 
