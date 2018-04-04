@@ -48,6 +48,7 @@ def driver(webdriver_module):
     WebDriverWait(webdriver_module, 10).until(EC.title_contains("Vault Password Manager"))
     _login_pw(webdriver_module,'user1','user1pw')
     WebDriverWait(webdriver_module, 10).until(EC.presence_of_element_located((By.ID,"entrydetails")))
+    WebDriverWait(webdriver_module, 10).until(EC.presence_of_element_located((By.TAG_NAME,"nav")))
     return webdriver_module
 
 
@@ -66,7 +67,7 @@ class NavCheck():
         """ Return a collection webelement by name or None if not found """
         for element in s.nav.find_elements_by_class_name("collectionname"):
             if element.text == name:
-                return element.parent
+                return element.find_element_by_xpath('..')
         return None
 
     def collectionname(s, name):
@@ -83,15 +84,15 @@ class NavCheck():
         Returns empty dictionary if none found.
         """
         retval = {}
-        for element in collection.find_element_by_class_name("collectionname"):
-            retval[element] = element.parent
+        for element in s.nav.find_elements_by_class_name("collectionname"):
+            retval[element] = element.find_element_by_xpath('..')
         return retval
 
     def group(s, collection, name):
         """ Return a group webelement by name or None if not found """
         for element in collection.find_elements_by_class_name("groupname"):
             if element.text == name:
-                return element.parent
+                return element.find_element_by_xpath('..')
         return None
 
     def groupname(s, collection, name):
@@ -99,24 +100,23 @@ class NavCheck():
         The group element is the parent of the groupname element.
         """
         for element in collection.find_elements_by_class_name("groupname"):
-            print "Checking group name", element.text
             if element.text == name:
                 return element
         return None
 
     def groups(s, collection):
         """ Return a dictionary of groupname_webelement:group_webelement pairs. 
-        Returns empty dictionary if none found.
+        Returns empty dictionary if none found. collection is the containing webelement. 
         """
         retval = {}
-        for element in collection.find_elements_by_class("groupname"):
-            retval[element] = element.parent
+        for element in collection.find_elements_by_class_name("groupname"):
+            retval[element] = element.find_element_by_xpath('..')
         return retval
 
     def item(s, group, name):
         """ Return an item web element by name or None if not found. 
-        Unlike groupname and collectionname, itemname elements Are not contained
-        by an item element.
+        Unlike groupname and collectionname, itemname elements are not contained
+        by an item element. group is the containing webelement. 
         """
         for element in group.find_elements_by_class_name("itemname"):
             if element.text == name:
@@ -124,7 +124,8 @@ class NavCheck():
         return None
         
     def items(s, group):
-        """ Return a list of itemname_webelements. Empty list if none found. """
+        """ Return a list of itemname_webelements. Empty list if none found. group is
+        the containing webelement. """
         return group.find_elements_by_class_name("itemname")
 
     def _click(s, element):
@@ -143,16 +144,36 @@ class NavCheck():
             s._click(collection)
             return
 
-        group = s.groupname(collection.parent, path[1])
+        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
         assert group
         if len(path) == 2:
             s._click(group)
             return
 
-        item = s.item(group.parent, path[2])
+        item = s.item(group.find_element_by_xpath('..'), path[2])
         assert item
         s._click(item)
         return
+
+    def visiblelist(s):
+        """ Returns a list of items in the nav tree that are currently visible.
+        No expansion is done. """
+        visible = []
+        collectionmap = s.collections()
+        assert len(collectionmap) > 0
+        for cname in collectionmap.keys():
+            groups = s.groups(collectionmap[cname])
+            if len(groups) == 0:
+                visible.append( (cname.text) )
+                continue
+            for groupname in groups.keys():
+                items = s.items(groups[groupname])
+                if items is None:
+                    visible.append( (cname.text, groupname.text) )
+                    continue
+                for item in items:
+                    visible.append( (cname.text, groupname.text, item.text) )
+        return visible
 
 
     def visible(s, path):
@@ -165,13 +186,13 @@ class NavCheck():
         if len(path) == 1:
             return collection.is_displayed()
 
-        group = s.groupname(collection.parent, path[1])
+        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
         if not group: return False
         print "Found group", group.text
         if len(path) == 2:
             return group.is_displayed()
 
-        item = s.item(group.parent, path[2])
+        item = s.item(group.find_element_by_xpath('..'), path[2])
         if not item: return False
         return item.is_displayed()
 
@@ -187,21 +208,26 @@ class NavCheck():
         if len(path) == 1:
             return not collection.is_displayed()
 
-        group = s.groupname(collection.parent, path[1])
+        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
         if not group: return True
         if len(path) == 2:
             return not group.is_displayed()
 
-        item = s.item(group.parent, path[2])
+        item = s.item(group.find_element_by_xpath('..'), path[2])
         if not item: return True
         return not item.is_displayed()
-        
 
+def test_a(driver):
+        
+    nav = NavCheck(driver)
+    print nav.visiblelist()
+    assert False
 
 def test_navigation_visibility(driver):
     """ 
-    Verify that expected navigation elements are visible. Gradually expand
-    tree to reveal all 3 levels: collection, group, item
+    Requirement: All authorized items should be reachable from the nav tree.
+    Requirement: Nav tree initially shows only collection names.
+    Gradually expand tree to reveal all 3 levels: collection, group, item
     """
     nav = NavCheck(driver)
 
@@ -261,4 +287,14 @@ def test_navigation_visibility(driver):
     assert nav.hidden(["linuxadmin","webservers/","LoadBal"])
     assert nav.hidden(["linuxadmin","webservers/","extA"])
     assert nav.hidden(["linuxadmin","webservers/","extB"])
+
     
+def test_(driver):
+    """  """
+
+
+# Add new
+# delete item
+# modify group, title, url, userid , password, notes
+# clear fields
+# User item visibility individual / shared

@@ -143,25 +143,25 @@ margin-top: -15px;
     </nav>
     <article id="entrydetails" >
       <form @submit.prevent="submit">
-	<label>*Group:</label><input v-model="groupid" placeholder="group name"><br>
-	<label>*Title:</label><input v-model="title" placeholder="title"><br>
-	<label>URL:</label><input v-model="url" placeholder="url"><br>
-	<label>Username:</label><input v-model="userid" placeholder="userIDx" ref="userid">
+	<label>*Group:</label><input id="groupid" v-model="groupid" placeholder="group name"><br>
+	<label>*Title:</label><input id="title" v-model="title" placeholder="title"><br>
+	<label>URL:</label><input id="url" v-model="url" placeholder="url"><br>
+	<label>Username:</label><input id="userid" v-model="userid" placeholder="userIDx" ref="userid">
 	<img src="images/copy.png" v-on:click="copyuserid"></img><br>
-	<label>Password:</label><input v-model="password" ref="password" placeholder="password" :type="showPW ? '': 'password'">
+	<label>Password:</label><input id="password" v-model="password" ref="password" placeholder="password" :type="showPW ? '': 'password'">
 	<img src="images/copy.png" v-on:click="copypassword"></img>
 	<img src="images/eye.png" v-on:click="showpass"></img><br>
-	<label>Notes:</label><br><textarea cols="40" rows="5" v-model="notes" placeholder="notes"></textarea><br>
-	Last update: {{changed}}<br>
-	Last password change: {{pwChanged}}<br>
+	<label>Notes:</label><br><textarea id="notes" cols="40" rows="5" v-model="notes" placeholder="notes"></textarea><br>
+	<div id="lastupdate">Last update: {{changed}}</div><br>
+	<div id="lastpwchange">Last password change: {{pwChanged}}</div><br>
 	<confirm @confirm="deleteentry" @cancel="cancel" text="Delete entry?">
-	  <button :disabled="!showDelete()">Delete</button>
+	  <button id="b-delete" :disabled="!showDelete()">Delete</button>
 	</confirm>
-	<button v-on:click="clearfields">Clear fields</button>
-	<button :disabled="!showNew()" v-on:click="addnew">Add New</button>
-	<button :disabled="!showUpdate()" v-on:click="update">{{updateType}}</button>
+	<button id="b-clear" v-on:click="clearfields">Clear fields</button>
+	<button id="b-new" :disabled="!showNew()" v-on:click="addnew">Add New</button>
+	<button id="b-update" :disabled="!showUpdate()" v-on:click="update">{{updateType}}</button>
 	<br>
-	<p class="error">{{error}}</p>
+	<p id="mainmsg" class="error">{{error}}</p>
       </form>
     </article>
   </div>
