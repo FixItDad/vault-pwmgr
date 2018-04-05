@@ -142,7 +142,7 @@ margin-top: -15px;
       </ul>
     </nav>
     <article id="entrydetails" >
-      <form @submit.prevent="submit">
+      <form id="itemform" @submit.prevent="submit">
 	<label>*Group:</label><input id="groupid" v-model="groupid" placeholder="group name"><br>
 	<label>*Title:</label><input id="title" v-model="title" placeholder="title"><br>
 	<label>URL:</label><input id="url" v-model="url" placeholder="url"><br>

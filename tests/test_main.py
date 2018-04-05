@@ -52,7 +52,47 @@ def driver(webdriver_module):
     return webdriver_module
 
 
-class NavCheck():
+class ItemHelper():
+    """ 
+    Helper class for examining and manipulating the item form
+    """
+    def __init__(s,driver):
+        """ Expects a Selenium style web browser driver """
+        s.driver = driver
+        s.form = driver.find_element_by_id("itemform")
+        assert s.form is not None
+
+    # The valid key values for item dictionaries
+    FIELD_NAMES = ("groupid","notes","password","title","url","userid",)
+
+    def set_fields(s, itemdict):
+        """ Fill item fields with values from itemdict. Keys must match
+        values from FIELD_NAMES. Non-matching fields are ignored. """
+        for field in s.FIELD_NAMES:
+            if field not in itemdict: continue
+            element = s.form.find_element_by_id(field)
+            element.send_keys(itemdict(field))
+
+    def get_fields(s):
+        """ Return a dictionary with current form field values. """
+        vals = {}
+        for field in s.FIELD_NAMES:
+            element = s.form.find_element_by_id(field)
+            vals[field] = element.text
+        return vals
+
+    fields = property(get_fields, set_fields)
+
+    @property
+    def message(s):
+        return s.form.find_element_by_id("mainmsg").text
+
+    def add_new(s):
+        """ Clicks the Add New button """
+        s.form.find_element_by_id("b-new").click()
+
+
+class NavigationHelper():
     """ 
     Helper class for examining and manipulating the navigation tree of 
     collections, groups and items.
@@ -230,7 +270,7 @@ def ztest_navigation_visibility(driver):
     Requirement: Nav tree initially shows only collection names.
     Gradually expand tree to reveal all 3 levels: collection, group, item
     """        
-    nav = NavCheck(driver)
+    nav = NavigationHelper(driver)
 
     # initially only collection names are visible
     visible = nav.visiblelist()
@@ -301,12 +341,77 @@ def ztest_navigation_visibility(driver):
     ]
     
 
-def test_(driver):
+def test_add_item_from_blank(driver):
     """  """
+    nav = NavigationHelper(driver)
+    form = ItemHelper(driver)
 
+    # initially only collection names are visible
+    visible = nav.visiblelist()
+    assert visible == [('linuxadmin',), ('user1',),]
 
-# Add new
-# delete item
-# modify group, title, url, userid , password, notes
-# clear fields
-# User item visibility individual / shared
+    assert form.fields == {
+        "groupid":"","notes":"","password":"","title":"","url":"","userid":"",
+    }
+    form.fields = {
+        "groupid":"web",
+        "title":"Facebook",
+        "url":"https://facebook.com",
+        "userid":"bob",
+        "password":"bobknows",
+        "notes":"Forget privacy!",
+    }
+    form.add_new()
+
+    assert form.message == "Added new entry web/Facebook"
+
+    # visible in nav tree?
+    nav.click(["user1"])
+    nav.click(["user1","web/"])
+    visible = nav.visiblelist()
+    assert visible == [
+        ('user1','Pauls Stuff/'),
+        ('user1','network/'),
+        ('user1','web/', 'Facebook'),
+        ('user1','web/', 'google'),
+        ('user1','web/', 'netflix'),
+    ]
+
+    assert False, 'not implemented'
+
+def ztest_delete_item(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_modify_item_group(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_modify_item_notes(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_modify_item_password(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_modify_item_title(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_modify_item_url(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_modify_item_userid(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_clear_item_fields(driver):
+    """  """
+    assert False, 'not implemented'
+
+def ztest_shared_item_visibility(driver):
+    """  """
+    assert False, 'not implemented'
+
