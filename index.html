@@ -56,7 +56,7 @@ article {
 
 label {
   display: inline-block;
-  width: 6rem;
+  width: 7rem;
   text-align: right;
   vertical-align: middle;
 }
@@ -79,7 +79,7 @@ header {
 }
 
 textarea {
-margin-left: 6rem;
+margin-left: 7rem;
 margin-top: -15px;
   padding: 2px;
 }
@@ -143,6 +143,7 @@ margin-top: -15px;
     </nav>
     <article id="entrydetails" >
       <form id="itemform" @submit.prevent="submit">
+	<label>*Collection:</label><input id="collectionname" v-model="collectionname"><br>
 	<label>*Group:</label><input id="groupid" v-model="groupid" placeholder="group name"><br>
 	<label>*Title:</label><input id="title" v-model="title" placeholder="title"><br>
 	<label>URL:</label><input id="url" v-model="url" placeholder="url"><br>

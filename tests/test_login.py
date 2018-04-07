@@ -7,6 +7,7 @@
 # TODO: configure vault data from pretest fixture.
 
 import pytest
+import time
 
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException

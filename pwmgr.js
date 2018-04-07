@@ -98,7 +98,8 @@ function vaultDeleteRequest(relURL) {
     return xhttp.status;
 }
 
-/* Return an array of objects consisting of names and a collection of groups.
+/* Return an array of objects consisting of names of form "(user|team)/<collectionname>/" 
+and a collection of groups.
 */
 function getCollections(vaultid) {
     console.log('getCollections for %s',vaultid);
@@ -124,15 +125,15 @@ function getCollections(vaultid) {
     return collections;
 }
 
-/* Return an array of password group objects consisting of names (with ending '/') and an array of entry names for the given collection id. A collectionid format is either "user/<vaultid>/" or "team/<teamid>/"
+/* Return an array of password group objects consisting of names (with ending '/') and an array of entry names for the given collection id. A collectionpath format is either "user/<vaultid>/" or "team/<teamid>/"
 Returns null if a collection cannot be retrieved as in the case for teams which the user does not have access to.
 
 Vault list groups response looks similar to the following (groups=network, web)
 / {"request_id":"5eec889b-4bd2-e309-a7be-e4a1265e37f4","lease_id":"","renewable":false,"lease_duration":0,"data":{"keys":["network/","web/"]},"wrap_info":null,"warnings":null,"auth":null}
 */
-function getCollection(collectionid) {
-    console.log('getCollection for %s',collectionid);
-    var response = vaultGetRequest(VPWMGR +collectionid+"?list=true");
+function getCollection(collectionpath) {
+    console.log('getCollection for %s',collectionpath);
+    var response = vaultGetRequest(VPWMGR +collectionpath+"?list=true");
 	if (! response) return null
     var groupnames = response.data.keys;
     var groups = []
@@ -140,7 +141,7 @@ function getCollection(collectionid) {
         groups[i]= {};
         groups[i].name = decodeURI(groupnames[i]);
         groups[i].entries = [];
-        response = vaultGetRequest(VPWMGR +collectionid+ groupnames[i] +"?list=true");
+        response = vaultGetRequest(VPWMGR +collectionpath+ groupnames[i] +"?list=true");
         for (var j=0; j< response.data.keys.length; j++)
 	    groups[i].entries[j] = decodeURI(response.data.keys[j]);
     }
@@ -210,12 +211,14 @@ function okTitle(name) {
 
 function clearAllFields(obj) {
 	console.log("Clear fields");
+	obj.o_collectionname= this.vaultid;
 	obj.o_groupid="";
 	obj.o_title="";
 	obj.o_url="";
 	obj.o_userid="";
 	obj.o_password="";
 	obj.o_notes="";
+	obj.collectionname= this.vaultid;
 	obj.groupid="";
 	obj.title="";
 	obj.url="";
@@ -233,8 +236,8 @@ function clearAllFields(obj) {
 Vue.component('authentication', {
     data: function () {
 	    return {
-	        vaultid: "psparks",
-	        pass: "pw",
+	        vaultid: "user1",
+	        pass: "user1pw",
 	        error: ""
 	    }
     },
@@ -262,6 +265,8 @@ Vue.component('pwmgr', {
 	    return {
 			collections: [],
 			groups: [],
+            collectionname: "",
+            o_collectionname: "",
 	        groupid: "",
 	        o_groupid: "",
 	        title: "",
@@ -284,6 +289,9 @@ Vue.component('pwmgr', {
     created: function () {
 	    eventHub.$on('displayEntry', this.displayEntry)
 		this.collections = getCollections(window.vaultid)
+        this.collectionid = "user/"+ window.vaultid +"/"
+        this.collectionname = window.vaultid
+        this.o_collectionname = window.vaultid
     },
     beforeDestroy: function () {
 	    eventHub.$off('displayEntry', this.displayEntry)
@@ -428,6 +436,7 @@ Vue.component('pwmgr', {
 	    writeEntry(this)
 		// TODO Might be able to make this conditional
         this.collections = getCollections(window.vaultid)
+		this.o_collectionname = this.collectionname;
 		this.o_groupid = this.groupid;
 		this.o_title = this.title;
 		this.o_url = this.url;
@@ -454,12 +463,14 @@ Vue.component('pwmgr', {
 		}
 	    var data = getDetails(collectionId + entryId)
 	    console.log("group=%s title=%s user=%s",data.groupid, data.title, data.userid)
+	    this.o_collectionname = collectionId.split("/")[1]
 	    this.o_groupid = data.groupid
 	    this.o_title = data.title
 		this.o_url = data.url;
 		this.o_userid = data.userid;
         this.o_password = data.password
 		this.o_notes = data.notes;
+	    this.collectionname = collectionId.split("/")[1]
 	    this.groupid = data.groupid
 	    this.title = data.title
 	    this.userid = data.userid

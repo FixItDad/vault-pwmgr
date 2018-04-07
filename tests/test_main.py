@@ -52,7 +52,7 @@ def driver(webdriver_module):
     return webdriver_module
 
 
-class ItemHelper():
+class ItemHelper(object):
     """ 
     Helper class for examining and manipulating the item form
     """
@@ -71,7 +71,7 @@ class ItemHelper():
         for field in s.FIELD_NAMES:
             if field not in itemdict: continue
             element = s.form.find_element_by_id(field)
-            element.send_keys(itemdict(field))
+            element.send_keys(itemdict[field])
 
     def get_fields(s):
         """ Return a dictionary with current form field values. """
@@ -92,7 +92,7 @@ class ItemHelper():
         s.form.find_element_by_id("b-new").click()
 
 
-class NavigationHelper():
+class NavigationHelper(object):
     """ 
     Helper class for examining and manipulating the navigation tree of 
     collections, groups and items.
@@ -341,7 +341,7 @@ def ztest_navigation_visibility(driver):
     ]
     
 
-def test_add_item_from_blank(driver):
+def test_add_item_from_initial(driver):
     """  """
     nav = NavigationHelper(driver)
     form = ItemHelper(driver)
@@ -362,22 +362,12 @@ def test_add_item_from_blank(driver):
         "notes":"Forget privacy!",
     }
     form.add_new()
-
     assert form.message == "Added new entry web/Facebook"
 
     # visible in nav tree?
     nav.click(["user1"])
     nav.click(["user1","web/"])
-    visible = nav.visiblelist()
-    assert visible == [
-        ('user1','Pauls Stuff/'),
-        ('user1','network/'),
-        ('user1','web/', 'Facebook'),
-        ('user1','web/', 'google'),
-        ('user1','web/', 'netflix'),
-    ]
-
-    assert False, 'not implemented'
+    assert nav.visible(('user1','web/', 'Facebook'))
 
 def ztest_delete_item(driver):
     """  """
