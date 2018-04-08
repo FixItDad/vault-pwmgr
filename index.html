@@ -22,9 +22,16 @@ body {
   font-style: italic;
   text-decoration: underline;
 }
+.collectionselect {
+  height: 16px;
+  line-height: 14px;
+  font-size: 14px;
+}
+
 .groupname {
   font-weight: bold;
 }
+
 ul {
   padding-left: 1em;
   line-height: 1.5em;
@@ -143,7 +150,10 @@ margin-top: -15px;
     </nav>
     <article id="entrydetails" >
       <form id="itemform" @submit.prevent="submit">
-	<label>*Collection:</label><input id="collectionname" v-model="collectionname"><br>
+	    <label>Collection:</label>
+        <select id="collectionid" class="collectionselect" v-model="collectionid">
+          <option v-for="collection in collections" v-bind:value="collection.name">{{collection.name.split("/")[1]}}</option>
+        </select><br>
 	<label>*Group:</label><input id="groupid" v-model="groupid" placeholder="group name"><br>
 	<label>*Title:</label><input id="title" v-model="title" placeholder="title"><br>
 	<label>URL:</label><input id="url" v-model="url" placeholder="url"><br>

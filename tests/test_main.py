@@ -6,18 +6,22 @@
 # Depends on the vault configuration provided by the startdev.sh script. 
 # TODO: configure vault data from pretest fixture.
 
+import datetime
 import pytest
 import time
 
+from pytest_sourceorder import ordered
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Test vault-pwmgr server to point to for tests
 PWMGR_URL = "http://127.0.0.1:7080/"
 
+HISTGROUP = u'Archive/'
 
 def _login_pw(driver, userid, userpw):
     """ Helper routine to log in by password with the supplied credentials. """
@@ -63,22 +67,30 @@ class ItemHelper(object):
         assert s.form is not None
 
     # The valid key values for item dictionaries
-    FIELD_NAMES = ("groupid","notes","password","title","url","userid",)
-
+    TEXT_FIELDS = ("groupid","notes","password","title","url","userid",)
+    SEL_FIELDS = ("collectionid",)
+    
     def set_fields(s, itemdict):
         """ Fill item fields with values from itemdict. Keys must match
-        values from FIELD_NAMES. Non-matching fields are ignored. """
-        for field in s.FIELD_NAMES:
+        values from TEXT_FIELDS. Non-matching fields are ignored. """
+        for field in s.TEXT_FIELDS:
             if field not in itemdict: continue
             element = s.form.find_element_by_id(field)
             element.send_keys(itemdict[field])
+        for field in s.SEL_FIELDS:
+            if field not in itemdict: continue
+            element = Select(s.form.find_element_by_id(field))
+            element.select_by_visible_text(itemdict[field])
 
     def get_fields(s):
         """ Return a dictionary with current form field values. """
         vals = {}
-        for field in s.FIELD_NAMES:
+        for field in s.TEXT_FIELDS:
             element = s.form.find_element_by_id(field)
-            vals[field] = element.text
+            vals[field] = element.get_attribute("value")
+        for field in s.SEL_FIELDS:
+            element = Select(s.form.find_element_by_id(field))
+            vals[field] = element.first_selected_option.text
         return vals
 
     fields = property(get_fields, set_fields)
@@ -91,11 +103,18 @@ class ItemHelper(object):
         """ Clicks the Add New button """
         s.form.find_element_by_id("b-new").click()
 
+    def delete(s):
+        """ Clicks the Delete button then OKs the 'Are you sure?' dialog. 
+        A WebDriverWait is recommended after calling this function.
+        """
+        s.form.find_element_by_id("b-delete").click()
+        s.driver.switch_to.alert.accept()
 
 class NavigationHelper(object):
     """ 
     Helper class for examining and manipulating the navigation tree of 
     collections, groups and items.
+    The click, visiblelist, visible, and archived functions are most commonly used.
     """
     def __init__(s,driver):
         """ Expects a Selenium style web browser driver """
@@ -103,6 +122,45 @@ class NavigationHelper(object):
         s.nav = driver.find_element_by_tag_name("nav")
         assert s.nav
         
+    def archived(s, del_ts, path, limit=5):
+        """ Check if an item is in the archive group. The path is the original (collection
+        group, title) tuple. The archive entry must be within 'limit' seconds of the ts 
+        datetime value. 
+        This function is needed to allow for the difference in timestamps when the
+        item is deleted and measured by the test program. It will prevent the test 
+        case from failing intermittently if the clock rolls between the 1 timestamps.
+        """
+        prefix = "{1}|{2}|".format(*path)
+        for item in s.items(s.group(s.collection(path[0]), HISTGROUP)):
+            if item.text.startswith(prefix):
+                ts_str = item.text[len(prefix):]
+                item_ts = datetime.datetime.strptime(ts_str,'%Y%m%d%H%M%S')
+                print "item_ts:",item_ts
+                if (del_ts - item_ts).total_seconds() < limit:
+                    return True
+        return False
+
+    def click(s, path):
+        """ Generate a click on a navigation tree element """
+        assert len(path) > 0 and len(path) < 4
+
+        collection = s.collectionname(path[0])
+        assert collection
+        if len(path) == 1:
+            s._click(collection)
+            return
+
+        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
+        assert group
+        if len(path) == 2:
+            s._click(group)
+            return
+
+        item = s.item(group.find_element_by_xpath('..'), path[2])
+        assert item
+        s._click(item)
+        return
+
     def collection(s, name):
         """ Return a collection webelement by name or None if not found """
         for element in s.nav.find_elements_by_class_name("collectionname"):
@@ -153,6 +211,27 @@ class NavigationHelper(object):
             retval[element] = element.find_element_by_xpath('..')
         return retval
 
+    def hidden(s, path):
+        """ Return True if an item is not visible in the nav tree. The path
+        is (collection, group, title) tuple. """
+        # Vue does not fully build the nav tree immediately, so we must allow for
+        # elements to be missing in addition to being present but not displayed.
+        assert len(path) > 0 and len(path) < 4
+
+        collection = s.collectionname(path[0])
+        if not collection: return True
+        if len(path) == 1:
+            return not collection.is_displayed()
+
+        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
+        if not group: return True
+        if len(path) == 2:
+            return not group.is_displayed()
+
+        item = s.item(group.find_element_by_xpath('..'), path[2])
+        if not item: return True
+        return not item.is_displayed()
+
     def item(s, group, name):
         """ Return an item web element by name or None if not found. 
         Unlike groupname and collectionname, itemname elements are not contained
@@ -168,32 +247,27 @@ class NavigationHelper(object):
         the containing webelement. """
         return group.find_elements_by_class_name("itemname")
 
-    def _click(s, element):
-        # Reload nav tree after clicking an element
-        element.click()
-        time.sleep(0.5)
-        s.nav = s.driver.find_element_by_tag_name("nav")
-
-    def click(s, path):
-        """ Generate a click on a navigation tree element """
+    def visible(s, path):
+        """ Returns True if an item is visible in the nav tree. The path 
+        is (collection, group, title) tuple. 
+        """
         assert len(path) > 0 and len(path) < 4
-
+        print "Looking for ",path
         collection = s.collectionname(path[0])
-        assert collection
+        if not collection: return False
+        print "Found collection", collection.text
         if len(path) == 1:
-            s._click(collection)
-            return
+            return collection.is_displayed()
 
         group = s.groupname(collection.find_element_by_xpath('..'), path[1])
-        assert group
+        if not group: return False
+        print "Found group", group.text
         if len(path) == 2:
-            s._click(group)
-            return
+            return group.is_displayed()
 
         item = s.item(group.find_element_by_xpath('..'), path[2])
-        assert item
-        s._click(item)
-        return
+        if not item: return False
+        return item.is_displayed()
 
     def visiblelist(s):
         """ Returns a sorted list of tuples in the nav tree that are currently visible.
@@ -220,48 +294,12 @@ class NavigationHelper(object):
             if not collection_expanded:
                 visible.append( (cname.text,) )
         return sorted(visible)
-
-
-    def visible(s, path):
-        """ Returns True if an item is visible in the nav tree """
-        assert len(path) > 0 and len(path) < 4
-        print "Looking for ",path
-        collection = s.collectionname(path[0])
-        if not collection: return False
-        print "Found collection", collection.text
-        if len(path) == 1:
-            return collection.is_displayed()
-
-        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
-        if not group: return False
-        print "Found group", group.text
-        if len(path) == 2:
-            return group.is_displayed()
-
-        item = s.item(group.find_element_by_xpath('..'), path[2])
-        if not item: return False
-        return item.is_displayed()
-
         
-    def hidden(s, path):
-        """ Return True if an item is not visible in the nav tree """
-        # Vue does not fully build the nav tree immediately, so we must allow for
-        # elements to be missing in addition to being present but not displayed.
-        assert len(path) > 0 and len(path) < 4
-
-        collection = s.collectionname(path[0])
-        if not collection: return True
-        if len(path) == 1:
-            return not collection.is_displayed()
-
-        group = s.groupname(collection.find_element_by_xpath('..'), path[1])
-        if not group: return True
-        if len(path) == 2:
-            return not group.is_displayed()
-
-        item = s.item(group.find_element_by_xpath('..'), path[2])
-        if not item: return True
-        return not item.is_displayed()
+    def _click(s, element):
+        # Reload nav tree after clicking an element
+        element.click()
+        time.sleep(0.5)
+        s.nav = s.driver.find_element_by_tag_name("nav")
 
 
 def ztest_navigation_visibility(driver):
@@ -339,35 +377,114 @@ def ztest_navigation_visibility(driver):
         ('user1','network/'),
         ('user1','web/'),
     ]
+
+@ordered
+class TestAddRemove(object):
     
+    def test_add_item_from_initial(s,driver):
+        """ Requirement: Add an item.
+        Add from initial screen with blank fields.
+        """
+        nav = NavigationHelper(driver)
+        form = ItemHelper(driver)
 
-def test_add_item_from_initial(driver):
-    """  """
-    nav = NavigationHelper(driver)
-    form = ItemHelper(driver)
+        # initially only collection names are visible
+        visible = nav.visiblelist()
+        assert visible == [('linuxadmin',), ('user1',),]
 
-    # initially only collection names are visible
-    visible = nav.visiblelist()
-    assert visible == [('linuxadmin',), ('user1',),]
+        assert form.fields == {
+            "collectionid":"user1",
+            "groupid":"",
+            "notes":"",
+            "password":"",
+            "title":"",
+            "url":"",
+            "userid":"",
+        }
+        form.fields = {
+            "collectionid":"user1",
+            "groupid":"web",
+            "title":"Facepalm",
+            "url":"https://facepalm.com",
+            "userid":"bob",
+            "password":"bobknows",
+            "notes":"Forget privacy!",
+        }
+        # Should be able to read the values back.
+        assert form.fields == {
+            "collectionid":"user1",
+            "groupid":"web",
+            "title":"Facepalm",
+            "url":"https://facepalm.com",
+            "userid":"bob",
+            "password":"bobknows",
+            "notes":"Forget privacy!",
+        }
+        form.add_new()
+        assert form.message == "Added new entry web/Facepalm"
 
-    assert form.fields == {
-        "groupid":"","notes":"","password":"","title":"","url":"","userid":"",
-    }
-    form.fields = {
-        "groupid":"web",
-        "title":"Facebook",
-        "url":"https://facebook.com",
-        "userid":"bob",
-        "password":"bobknows",
-        "notes":"Forget privacy!",
-    }
-    form.add_new()
-    assert form.message == "Added new entry web/Facebook"
+        # visible in nav tree?
+        nav.click(["user1"])
+        nav.click(["user1","web/"])
+        assert nav.visible(('user1','web/', 'Facepalm'))
 
-    # visible in nav tree?
-    nav.click(["user1"])
-    nav.click(["user1","web/"])
-    assert nav.visible(('user1','web/', 'Facebook'))
+
+    def test_del_item_facepalm(s,driver):
+        """ Requirements: Items can be deleted. Old items are moved 
+        to an Archive group in the same collection. The item title contains a timestamp.
+        """
+        nav = NavigationHelper(driver)
+
+        nav.click(["user1"])
+        nav.click(["user1","web/"])
+        assert nav.visible(('user1','web/', 'Facepalm'))
+        nav.click(["user1","web/","Facepalm"])
+        form = ItemHelper(driver)
+        assert form.fields == {
+            "collectionid":"user1",
+            "groupid":"web",
+            "notes":"Forget privacy!",
+            "password":"bobknows",
+            "title":"Facepalm",
+            "url":"https://facepalm.com",
+            "userid":"bob",
+        }
+        form.delete()
+        delete_ts = datetime.datetime.utcnow()
+        WebDriverWait(driver, 5).until(
+            EC.text_to_be_present_in_element(
+                (By.ID,"mainmsg"),"Deleted entry web/Facepalm"))
+
+        assert form.fields == {
+            "collectionid":"user1",
+            "groupid":"",
+            "notes":"",
+            "password":"",
+            "title":"",
+            "url":"",
+            "userid":"",
+        }
+        assert form.message == "Deleted entry web/Facepalm"
+        visible = nav.visiblelist()
+        assert visible == [
+            (u'linuxadmin',),
+            (u'user1',HISTGROUP),
+            (u'user1',u'Pauls Stuff/'),
+            (u'user1',u'network/'),
+            (u'user1',u'web/', u'google'),
+            (u'user1',u'web/', u'netflix'),
+        ]
+
+        nav.click(["user1", HISTGROUP])
+        title = datetime.datetime.strftime(delete_ts,'web|Facepalm|%Y%m%d%H%M%S')
+        assert nav.archived(delete_ts, ('user1','web','Facepalm') ), "title: %s" % title
+
+
+
+    def test_delete_from_archived(s,driver):
+        pass
+
+# Delete from Archived
 
 def ztest_delete_item(driver):
     """  """

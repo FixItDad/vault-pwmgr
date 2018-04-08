@@ -26,7 +26,7 @@ window.userToken = ""
 window.vaultid = ""
 
 // Special group for historical entries
-var HISTGROUP="Archived Entries"
+var HISTGROUP="Archive"
 
 // Vault path prefix for this application
 var VPWMGR= "v1/secret/vpwmgr/"
@@ -187,10 +187,9 @@ function archiveOldEntry(obj) {
     data.changed = obj.changed
     data.pwChanged = obj.pwChanged
 	
-    var d = new Date()
-    var path = obj.collectionid + HISTGROUP +"/"+ obj.o_groupid +"|"+ obj.o_title +"|"+
-		d.getFullYear() + (d.getMonth()+1) + d.getDate() +
-		d.getHours() + d.getMinutes() + d.getSeconds()
+    var timestamp = new Date().toISOString().replace(/[^0-9]/g,"")
+    var path = obj.collectionid + HISTGROUP +"/"+
+        obj.o_groupid +"|"+ obj.o_title +"|"+ timestamp.slice(0,14)
 	console.log("Create archive entry: %s", path)
     vaultPostRequest(VPWMGR + path, data)
 }
@@ -211,14 +210,14 @@ function okTitle(name) {
 
 function clearAllFields(obj) {
 	console.log("Clear fields");
-	obj.o_collectionname= this.vaultid;
+	obj.o_collectionname= "user/"+ this.vaultid +"/";
 	obj.o_groupid="";
 	obj.o_title="";
 	obj.o_url="";
 	obj.o_userid="";
 	obj.o_password="";
 	obj.o_notes="";
-	obj.collectionname= this.vaultid;
+	obj.collectionname= "user/"+ this.vaultid +"/";
 	obj.groupid="";
 	obj.title="";
 	obj.url="";
@@ -265,8 +264,8 @@ Vue.component('pwmgr', {
 	    return {
 			collections: [],
 			groups: [],
-            collectionname: "",
-            o_collectionname: "",
+            collectionid: "",
+            o_collectionid: "",
 	        groupid: "",
 	        o_groupid: "",
 	        title: "",
@@ -290,8 +289,6 @@ Vue.component('pwmgr', {
 	    eventHub.$on('displayEntry', this.displayEntry)
 		this.collections = getCollections(window.vaultid)
         this.collectionid = "user/"+ window.vaultid +"/"
-        this.collectionname = window.vaultid
-        this.o_collectionname = window.vaultid
     },
     beforeDestroy: function () {
 	    eventHub.$off('displayEntry', this.displayEntry)
@@ -355,17 +352,18 @@ Vue.component('pwmgr', {
 	},
 	// Delete an entry from the PW Vault (Confirmed delete button functionality)
 	deleteentry: function () {
-		var entrypath= this.collectionid + this.groupid +"/"+ this.title;
+		var entrypath= this.collectionid + this.groupid +"/"+ this.title
+        var entryname= this.groupid +"/"+ this.title
 		console.log("Delete entry:"+ entrypath);
 		if (this.entryExists()) {
 			if (this.groupid !== HISTGROUP) archiveOldEntry(this)
 			deleteEntry(entrypath);
 			this.collections = getCollections(window.vaultid)
 			clearAllFields(this)
-		    this.error= "Deleted entry "+ entrypath;
+		    this.error= "Deleted entry "+ entryname
 		}
 		else {
-		    this.error= "Entry does not exist:"+ entrypath;
+		    this.error= "Entry does not exist:"+ entrypath
 		}
 	},
 	// Add a new entry to PW vault
@@ -436,7 +434,7 @@ Vue.component('pwmgr', {
 	    writeEntry(this)
 		// TODO Might be able to make this conditional
         this.collections = getCollections(window.vaultid)
-		this.o_collectionname = this.collectionname;
+		this.o_collectionid = this.collectionid;
 		this.o_groupid = this.groupid;
 		this.o_title = this.title;
 		this.o_url = this.url;
@@ -452,7 +450,6 @@ Vue.component('pwmgr', {
 	// Show PW entry details when a navigation entry is selected
 	displayEntry: function (collectionId, entryId) {
 	    console.log("displayEntry %s %s", collectionId, entryId)
-		this.collectionid = collectionId
 		// Make sure the groups field gets set for the current collection
 		this.groups = null
 		for (var i=0; i < this.collections.length; i++) {
@@ -463,14 +460,14 @@ Vue.component('pwmgr', {
 		}
 	    var data = getDetails(collectionId + entryId)
 	    console.log("group=%s title=%s user=%s",data.groupid, data.title, data.userid)
-	    this.o_collectionname = collectionId.split("/")[1]
+	    this.o_collectionid = collectionId
 	    this.o_groupid = data.groupid
 	    this.o_title = data.title
 		this.o_url = data.url;
 		this.o_userid = data.userid;
         this.o_password = data.password
 		this.o_notes = data.notes;
-	    this.collectionname = collectionId.split("/")[1]
+	    this.collectionid = collectionId
 	    this.groupid = data.groupid
 	    this.title = data.title
 	    this.userid = data.userid
