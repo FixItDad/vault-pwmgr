@@ -122,23 +122,23 @@ class NavigationHelper(object):
         s.nav = driver.find_element_by_tag_name("nav")
         assert s.nav
         
-    def archived(s, del_ts, path, limit=5):
-        """ Check if an item is in the archive group. The path is the original (collection
-        group, title) tuple. The archive entry must be within 'limit' seconds of the ts 
-        datetime value. 
+    def findarchived(s, del_ts, path, limit=5):
+        """ Returns the title of an item in the archive group that is within 'limit'
+        seconds of the del_ts datetime value. None is returned if no matching item 
+        is found. The path is the original (collection, group, title) tuple.
         This function is needed to allow for the difference in timestamps when the
         item is deleted and measured by the test program. It will prevent the test 
-        case from failing intermittently if the clock rolls between the 1 timestamps.
+        case from failing intermittently if the clock values rollover between the
+        timestamps.
         """
         prefix = "{1}|{2}|".format(*path)
         for item in s.items(s.group(s.collection(path[0]), HISTGROUP)):
             if item.text.startswith(prefix):
                 ts_str = item.text[len(prefix):]
                 item_ts = datetime.datetime.strptime(ts_str,'%Y%m%d%H%M%S')
-                print "item_ts:",item_ts
                 if (del_ts - item_ts).total_seconds() < limit:
-                    return True
-        return False
+                    return item.text
+        return None
 
     def click(s, path):
         """ Generate a click on a navigation tree element """
@@ -380,7 +380,8 @@ def ztest_navigation_visibility(driver):
 
 @ordered
 class TestAddRemove(object):
-    
+    """ 
+    """
     def test_add_item_from_initial(s,driver):
         """ Requirement: Add an item.
         Add from initial screen with blank fields.
@@ -432,7 +433,15 @@ class TestAddRemove(object):
     def test_del_item_facepalm(s,driver):
         """ Requirements: Items can be deleted. Old items are moved 
         to an Archive group in the same collection. The item title contains a timestamp.
+        Form fields are cleared. A delete message is shown.
+        Items can be deleted from the archive group.
         """
+        # This is longer than I like and I would normally test the "delete from
+        # archive" separately. But, the archived item title value is generated from
+        # a timestamp and passing that value between test cases seems to require
+        # code outside of this class. Combining the two seems less confusing.
+        # I could duplicate the add/delete for the delete from archive case, but
+        # that has its own problems.
         nav = NavigationHelper(driver)
 
         nav.click(["user1"])
@@ -448,7 +457,8 @@ class TestAddRemove(object):
             "title":"Facepalm",
             "url":"https://facepalm.com",
             "userid":"bob",
-        }
+        }, "Expected item values displayed when selected"
+        
         form.delete()
         delete_ts = datetime.datetime.utcnow()
         WebDriverWait(driver, 5).until(
@@ -463,8 +473,11 @@ class TestAddRemove(object):
             "title":"",
             "url":"",
             "userid":"",
-        }
-        assert form.message == "Deleted entry web/Facepalm"
+        }, "Requirement: Fields are cleared after delete"
+        
+        assert form.message == "Deleted entry web/Facepalm", "Requirement: delete message displayed"
+
+        time.sleep(1) # Nav tree needs extra time to update
         visible = nav.visiblelist()
         assert visible == [
             (u'linuxadmin',),
@@ -473,18 +486,41 @@ class TestAddRemove(object):
             (u'user1',u'network/'),
             (u'user1',u'web/', u'google'),
             (u'user1',u'web/', u'netflix'),
-        ]
+        ], "Archive group is visible in nav tree"
 
         nav.click(["user1", HISTGROUP])
-        title = datetime.datetime.strftime(delete_ts,'web|Facepalm|%Y%m%d%H%M%S')
-        assert nav.archived(delete_ts, ('user1','web','Facepalm') ), "title: %s" % title
+        title = nav.findarchived(delete_ts, ('user1','web','Facepalm') )
+        assert title is not None, "Requirement: deleted entry is in archive group."
 
+        # Delete item from archive group
+        nav.click(("user1", HISTGROUP, title))
+        assert form.fields == {
+            "collectionid":"user1",
+            "groupid":HISTGROUP[:-1],
+            "notes":"Forget privacy!",
+            "password":"bobknows",
+            "title":title,
+            "url":"https://facepalm.com",
+            "userid":"bob",
+        }, "Archived entry values are as expected."
 
+        form.delete()
+        WebDriverWait(driver, 5).until(
+            EC.text_to_be_present_in_element(
+                (By.ID,"mainmsg"),"Deleted entry %s%s" % (HISTGROUP, title)))
 
-    def test_delete_from_archived(s,driver):
-        pass
+        assert form.fields == {
+            "collectionid":"user1",
+            "groupid":"",
+            "notes":"",
+            "password":"",
+            "title":"",
+            "url":"",
+            "userid":"",
+        }, "Requirement: fields cleared after delete (archived entry)"
 
-# Delete from Archived
+        assert nav.hidden(('user1', HISTGROUP, title)), "Requirement: item removed from archive"
+
 
 def ztest_delete_item(driver):
     """  """
