@@ -3,7 +3,8 @@
 # Functional tests for the main password manager page
 
 # Currently targeting Firefox
-# Depends on the vault configuration provided by the startdev.sh script. 
+# Depends on the vault configuration provided by the startdev.sh script.
+# Depends on pytest-sourceorder to force test case execution order.
 # TODO: configure vault data from pretest fixture.
 
 import datetime
@@ -24,6 +25,12 @@ import testutils
 PWMGR_URL = "http://127.0.0.1:7080/"
 
 HISTGROUP = testutils.HISTGROUP
+
+# Used to store state information for multi-step tests. Generally tests should
+# be independent, but some cases may depend on results returned earlier by the
+# program under test. This can be used judiciously instead of than duplicating
+# test code or having very long test cases that test multiple items.
+state = {}
 
 def _login_pw(driver, userid, userpw):
     """ Helper routine to log in by password with the supplied credentials. """
@@ -191,14 +198,7 @@ class TestAddRemove(object):
         """ Requirements: Items can be deleted. Old items are moved 
         to an Archive group in the same collection. The item title contains a timestamp.
         Form fields are cleared. A delete message is shown.
-        Items can be deleted from the archive group.
         """
-        # This is longer than I like and I would normally test the "delete from
-        # archive" separately. But, the archived item title value is generated from
-        # a timestamp and passing that value between test cases seems to require
-        # code outside of this class. Combining the two seems less confusing.
-        # I could duplicate the add/delete for the delete from archive case, but
-        # that has its own problems.
         nav = testutils.NavigationHelper(driver)
 
         nav.click(["user1"])
@@ -248,8 +248,21 @@ class TestAddRemove(object):
         nav.click(["user1", HISTGROUP])
         title = nav.findarchived(delete_ts, ('user1','web','Facepalm') )
         assert title is not None, "Requirement: deleted entry is in archive group."
+        # Stash title name for later test step
+        state["test_del_item_facepalm_title"] = title
 
-        # Delete item from archive group
+        
+    def test_del_archived_item_facepalm(s,driver):
+        """ Requirements: Items can be deleted from the archive group.
+        """
+        nav = testutils.NavigationHelper(driver)
+        form = testutils.ItemHelper(driver)
+
+        nav.click(["user1"])
+        nav.click(["user1", HISTGROUP])
+        title = state["test_del_item_facepalm_title"]
+        del state["test_del_item_facepalm_title"]
+
         nav.click(("user1", HISTGROUP, title))
         assert form.fields == {
             "collectionid":"user1",
