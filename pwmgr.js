@@ -25,19 +25,20 @@ notes = textual notes associated with a password entry (optional)
 window.userToken = ""
 window.vaultid = ""
 
-// Special group for historical entries
+// Name of the special group for historical entries. Deleted entries are stored here.
 var HISTGROUP="Archive"
 
-// Vault path prefix for this application
+// Path prefix within Vault where data is stored for this application
 var VPWMGR= "v1/secret/vpwmgr/"
 
 // Base URL for the Vault server
 var BASEURL='http://127.0.0.1:8200/';
 
-// A empty Vue instance to act as a event transfer hub.
+// A empty Vue instance to act as a event transfer hub. This is used for communication
+// between different vue components.
 var eventHub = new Vue();
 
-
+/* Get the current time in our timestamp format. */
 function currentTime() {
     var d = new Date();
     var ds = d.toISOString()
@@ -87,6 +88,8 @@ function vaultPostRequest(relURL, dataobj) {
 }
 
 /* Make a request to the Vault server. Return the status.
+TODO: Make this asynchronous. There is not much the user can do during a request, 
+but it would be nice not to freeze in case there is a problem talking to Vault.
 */
 function vaultDeleteRequest(relURL) {
     var xhttp = new XMLHttpRequest();
@@ -125,8 +128,11 @@ function getCollections(vaultid) {
     return collections;
 }
 
-/* Return an array of password group objects consisting of names (with ending '/') and an array of entry names for the given collection id. A collectionpath format is either "user/<vaultid>/" or "team/<teamid>/"
-Returns null if a collection cannot be retrieved as in the case for teams which the user does not have access to.
+/* Return an array of password group objects consisting of names (with ending '/') 
+and an array of entry names for the given collection id. A collectionpath format is 
+either "user/<vaultid>/" or "team/<teamid>/"
+Returns null if a collection cannot be retrieved as in the case for teams which the 
+user does not have access to.
 
 Vault list groups response looks similar to the following (groups=network, web)
 / {"request_id":"5eec889b-4bd2-e309-a7be-e4a1265e37f4","lease_id":"","renewable":false,"lease_duration":0,"data":{"keys":["network/","web/"]},"wrap_info":null,"warnings":null,"auth":null}
@@ -161,6 +167,8 @@ function getDetails(entrypath) {
     return retdata
 }
 
+/* Write an entry to the vault (new or update)
+*/
 function writeEntry(obj) {
     var data = new Object()
     data.url = obj.url
@@ -173,11 +181,14 @@ function writeEntry(obj) {
     vaultPostRequest(VPWMGR + path, data)
 }
 
+/* Delete a vault entry */
 function deleteEntry(entrypath) {
     console.log('deleteEntry for %s',entrypath);
     return vaultDeleteRequest(VPWMGR + entrypath)
 }
 
+/* Archive an entry that the user has requested to be deleted. Saved the entry in
+archive area where it can be permanently deleted or accessed for restoration. */
 function archiveOldEntry(obj) {
     var data = {}
     data.url = obj.o_url
@@ -208,6 +219,7 @@ function okTitle(name) {
     return re.test(name);
 }
 
+/* Reset entry values to blanks. */
 function clearAllFields(obj) {
 	console.log("Clear fields");
 	obj.o_collectionname= "user/"+ this.vaultid +"/";
@@ -258,6 +270,8 @@ Vue.component('authentication', {
 })
 
 // Post auth PW manger component
+/* We keep track of changed values using o_ prefixed fields. This allows detection of
+new vs update requests. */
 Vue.component('pwmgr', {
     template: "#pwmgr-template",
     data: function () {
@@ -285,14 +299,19 @@ Vue.component('pwmgr', {
 			updateType: "Update",
 	    }
     },
+
+    // Populate the navigation tree with the user's groups. Enable the event hub.
     created: function () {
 	    eventHub.$on('displayEntry', this.displayEntry)
 		this.collections = getCollections(window.vaultid)
         this.collectionid = "user/"+ window.vaultid +"/"
     },
+
+    // Disable the event hub.
     beforeDestroy: function () {
 	    eventHub.$off('displayEntry', this.displayEntry)
     },
+
 
     methods: {
 	submit: function () {}, /* Dummy, just ignore submit request */
@@ -314,6 +333,7 @@ Vue.component('pwmgr', {
 		return (this.o_groupid!=="" && this.o_title!=="" &&
 			   this.groupid!=="" && this.title!=="")
 	},
+
 	// Determine if "New entry" button should be displayed
 	showNew: function () {
 	    return (this.groupid!=="" && this.title!=="" &&
@@ -346,11 +366,15 @@ Vue.component('pwmgr', {
 	clearfields: function () {
 		clearAllFields(this);
 	},
+
 	// Do nothing when a confirmation is cancelled
 	cancel: function () {
 		this.error= "Request cancelled"
 	},
+
 	// Delete an entry from the PW Vault (Confirmed delete button functionality)
+    /* Confirm the delete with the user. Save a copy of the entry in archive (unless
+       this is the archive group). */
 	deleteentry: function () {
 		var entrypath= this.collectionid + this.groupid +"/"+ this.title
         var entryname= this.groupid +"/"+ this.title
@@ -366,6 +390,7 @@ Vue.component('pwmgr', {
 		    this.error= "Entry does not exist:"+ entrypath
 		}
 	},
+
 	// Add a new entry to PW vault
 	addnew: function () {
 	    console.log("Add entry");
@@ -400,6 +425,7 @@ Vue.component('pwmgr', {
 		this.o_notes = this.notes;
 		this.showPW = false;
 	},
+
 	// Update a PW vault entry
 	update: function () {
 	    console.log("Update the entry");
@@ -443,10 +469,12 @@ Vue.component('pwmgr', {
 		this.o_notes = this.notes;
 		this.showPW = false;
 	},
+
 	// Show the plaintext password toggle button (eyeball)
 	showpass: function () {
 	    this.showPW = !this.showPW;
 	},
+
 	// Show PW entry details when a navigation entry is selected
 	displayEntry: function (collectionId, entryId) {
 	    console.log("displayEntry %s %s", collectionId, entryId)
@@ -478,11 +506,13 @@ Vue.component('pwmgr', {
         this.pwChanged = data.pwChanged
         this.showPW = false
 	},
+
 	copyuserid: function() {
 	    console.log("copyuserid to clipboard")
 		this.$refs.userid.select()
 		document.execCommand('copy')
 	},
+
 	copypassword: function() {
 	    console.log("copypassword to clipboard")
         // TODO: Not sure I like changing the type to text temporarily. Could PW be displayed 
@@ -501,7 +531,7 @@ Vue.component('pwmgr', {
     }
 })
 
-// Main app component
+// Main app component. Handle switch between login screen and the main page.
 Vue.component('application', {
     template: "#app-template",
     data: function () {
@@ -517,7 +547,8 @@ Vue.component('application', {
     }
 })
 
-/* General confirm dialog for destructive operations. Wrap button in <confirm ..></confirm> tags */
+/* General confirm dialog for destructive operations. Use by wrapping button 
+in <confirm ..></confirm> tags */
 Vue.component('confirm', {
 	props: ['text'],
 	functional: true,
@@ -550,6 +581,7 @@ Vue.component('confirm', {
 	}
 })
 
+/* This is the group component of the navigation tree. Open and close the enclosed items. */
 Vue.component('group', {
     template: '#group-template',
     props: {
@@ -572,6 +604,7 @@ Vue.component('group', {
     }
 })
 
+/* The collection component of the navigation tree. Open and close to view groups. */
 Vue.component('collection', {
     template: '#collection-template',
     props: {
@@ -590,7 +623,7 @@ Vue.component('collection', {
 })
 
 
-// boot up the demo
+// boot up the application
 var demo = new Vue({
     el: '#demo',
 },
