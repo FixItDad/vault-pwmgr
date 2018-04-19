@@ -28,12 +28,6 @@ window.vaultid = ""
 // Name of the special group for historical entries. Deleted entries are stored here.
 var HISTGROUP="Archive"
 
-// Path prefix within Vault where data is stored for this application
-var VPWMGR= "v1/secret/vpwmgr/"
-
-// Base URL for the Vault server
-var BASEURL='http://127.0.0.1:8200/';
-
 // A empty Vue instance to act as a event transfer hub. This is used for communication
 // between different vue components.
 var eventHub = new Vue();
