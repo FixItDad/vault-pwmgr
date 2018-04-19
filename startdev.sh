@@ -19,10 +19,12 @@ which vault >/dev/null 2>&1 || abort "Vault executable not found. Please install
 
 mkdir -p logs
 
-./httpd.py >logs/httpd.log 2>&1 &
-
 vault server -dev >logs/vault.log 2>&1 &
-# await full startup
+
+cd www; ../httpd.py >../logs/httpd.log 2>&1 &
+cd -
+
+# await full startup of vault
 sleep 3
 
 export VAULT_ADDR='http://127.0.0.1:8200'
