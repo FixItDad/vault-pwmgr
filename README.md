@@ -11,7 +11,7 @@ There is also functionality for sharing passwords among team members. Each team 
 
 Here's a screenshot representing development around April 2018. I'm primarily concerned with functionality rather than looks at this point.
 
-![Screenshot of the UI with a navigation tree of folders and entry title in the left column and a form with password entry details in the right column. There are update timestamps and an update button at the bottom or the right column.](https://github.com/FixItDad/vault-pwmgr/raw/master/images/screenshot1.jpg "Screenshot 1")
+![Screenshot of the UI with a navigation tree of folders and entry title in the left column and a form with password entry details in the right column. There are update timestamps and an update button at the bottom or the right column.](https://github.com/FixItDad/vault-pwmgr/raw/master/doc/screenshot1.jpg "Screenshot 1")
 
 This is my first AJAX / web development project so if you're a web developer looking at the code, try not to laugh too hard. I wanted something to help me learn about front-end web programming and [vue.js](https://vuejs.org) in particular.
 
