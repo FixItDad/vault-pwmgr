@@ -1,4 +1,6 @@
 # vault-pwmgr
+**Status:** There was not much interest in this functionality among the group where I work. My personal time has been very limited so development is on hold at this point.
+
 A browser based password manager using Hashicorp's [Vault](https://www.vaultproject.io/) product to store passwords. This is written as a single page web app using [vue.js](https://vuejs.org). 
 
 There is a somewhat similar project at [vault-ui](https://github.com/djenriquez/vault-ui). That solution provides more complete access to the Vault functionality and would be better suited to administrators and more tech savvy users. With this project I wanted to provide some easy to use basic password manager functionality with the ability to easily share passwords among teams.
